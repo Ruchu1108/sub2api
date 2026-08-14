@@ -49,6 +49,10 @@ func (User) Fields() []ent.Field {
 		field.Float("balance").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
 			Default(0),
+		// 默认金额：批量重置余额时恢复到该值；管理员创建用户时默认取全局 default_balance 设置。
+		field.Float("default_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Default(0),
 		field.Float("frozen_balance").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
 			Default(0),
@@ -135,6 +139,8 @@ func (User) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("pending_auth_sessions", PendingAuthSession.Type),
 		edge.To("platform_quotas", UserPlatformQuota.Type),
+		// account_bindings: 用户绑定的账号（仅作重置联动标记）
+		edge.To("account_bindings", AccountUserBinding.Type),
 	}
 }
 

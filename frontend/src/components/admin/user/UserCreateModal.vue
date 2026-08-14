@@ -54,6 +54,11 @@
         />
         <p class="input-hint">{{ t('admin.users.form.rpmLimitHint') }}</p>
       </div>
+      <div>
+        <label class="input-label">{{ t('admin.users.columns.defaultAmount') }}</label>
+        <input v-model="form.default_amount" type="number" min="0" step="any" class="input" :placeholder="t('admin.users.form.defaultAmountPlaceholder')" />
+        <p class="input-hint">{{ t('admin.users.form.defaultAmountHint') }}</p>
+      </div>
     </form>
     <template #footer>
       <div class="flex justify-end gap-3">
@@ -82,7 +87,7 @@ const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['close', 'success']); const { t } = useI18n()
 const appStore = useAppStore()
 
-const form = reactive({ email: '', password: '', username: '', notes: '', role: 'user' as 'user' | 'admin', balance: '', concurrency: 1, rpm_limit: 0 })
+const form = reactive({ email: '', password: '', username: '', notes: '', role: 'user' as 'user' | 'admin', balance: '', default_amount: '', concurrency: 1, rpm_limit: 0 })
 
 const stepUp = useStepUp()
 const loading = ref(false)
@@ -91,12 +96,14 @@ const submit = async () => {
   if (loading.value) return
   loading.value = true
   try {
-    const { balance: rawBalance, ...rest } = { ...form }
+    const { balance: rawBalance, default_amount: rawDefaultAmount, ...rest } = { ...form }
     const balance = String(rawBalance).trim()
-    const payload: typeof rest & { balance?: number } = { ...rest }
+    const defaultAmount = String(rawDefaultAmount).trim()
+    const payload: typeof rest & { balance?: number; default_amount?: number } = { ...rest }
     if (balance !== '') {
       payload.balance = Number(balance)
     }
+    if (defaultAmount !== '') payload.default_amount = Number(defaultAmount)
     // 创建管理员属敏感操作：后端返回 STEP_UP_REQUIRED 时弹 TOTP 验证并重试
     await stepUp.run(() => adminAPI.users.create(payload))
     appStore.showSuccess(t('admin.users.userCreated'))
@@ -116,7 +123,7 @@ const submit = async () => {
   } finally { loading.value = false }
 }
 
-watch(() => props.show, (v) => { if(v) Object.assign(form, { email: '', password: '', username: '', notes: '', role: 'user', balance: '', concurrency: 1, rpm_limit: 0 }) })
+watch(() => props.show, (v) => { if(v) Object.assign(form, { email: '', password: '', username: '', notes: '', role: 'user', balance: '', default_amount: '', concurrency: 1, rpm_limit: 0 }) })
 
 const generateRandomPassword = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*'

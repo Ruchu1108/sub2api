@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
+	"github.com/Wei-Shaw/sub2api/ent/accountuserbinding"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
@@ -33,6 +34,7 @@ type AccountQuery struct {
 	withParent        *AccountQuery
 	withChildren      *AccountQuery
 	withUsageLogs     *UsageLogQuery
+	withUserBindings  *AccountUserBindingQuery
 	withAccountGroups *AccountGroupQuery
 	modifiers         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -174,6 +176,28 @@ func (_q *AccountQuery) QueryUsageLogs() *UsageLogQuery {
 			sqlgraph.From(account.Table, account.FieldID, selector),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, account.UsageLogsTable, account.UsageLogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUserBindings chains the current query on the "user_bindings" edge.
+func (_q *AccountQuery) QueryUserBindings() *AccountUserBindingQuery {
+	query := (&AccountUserBindingClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(account.Table, account.FieldID, selector),
+			sqlgraph.To(accountuserbinding.Table, accountuserbinding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, account.UserBindingsTable, account.UserBindingsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -400,6 +424,7 @@ func (_q *AccountQuery) Clone() *AccountQuery {
 		withParent:        _q.withParent.Clone(),
 		withChildren:      _q.withChildren.Clone(),
 		withUsageLogs:     _q.withUsageLogs.Clone(),
+		withUserBindings:  _q.withUserBindings.Clone(),
 		withAccountGroups: _q.withAccountGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -459,6 +484,17 @@ func (_q *AccountQuery) WithUsageLogs(opts ...func(*UsageLogQuery)) *AccountQuer
 		opt(query)
 	}
 	_q.withUsageLogs = query
+	return _q
+}
+
+// WithUserBindings tells the query-builder to eager-load the nodes that are connected to
+// the "user_bindings" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *AccountQuery) WithUserBindings(opts ...func(*AccountUserBindingQuery)) *AccountQuery {
+	query := (&AccountUserBindingClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUserBindings = query
 	return _q
 }
 
@@ -551,12 +587,13 @@ func (_q *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 	var (
 		nodes       = []*Account{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withGroups != nil,
 			_q.withProxy != nil,
 			_q.withParent != nil,
 			_q.withChildren != nil,
 			_q.withUsageLogs != nil,
+			_q.withUserBindings != nil,
 			_q.withAccountGroups != nil,
 		}
 	)
@@ -611,6 +648,13 @@ func (_q *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 		if err := _q.loadUsageLogs(ctx, query, nodes,
 			func(n *Account) { n.Edges.UsageLogs = []*UsageLog{} },
 			func(n *Account, e *UsageLog) { n.Edges.UsageLogs = append(n.Edges.UsageLogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withUserBindings; query != nil {
+		if err := _q.loadUserBindings(ctx, query, nodes,
+			func(n *Account) { n.Edges.UserBindings = []*AccountUserBinding{} },
+			func(n *Account, e *AccountUserBinding) { n.Edges.UserBindings = append(n.Edges.UserBindings, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -797,6 +841,36 @@ func (_q *AccountQuery) loadUsageLogs(ctx context.Context, query *UsageLogQuery,
 	}
 	query.Where(predicate.UsageLog(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(account.UsageLogsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.AccountID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "account_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *AccountQuery) loadUserBindings(ctx context.Context, query *AccountUserBindingQuery, nodes []*Account, init func(*Account), assign func(*Account, *AccountUserBinding)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*Account)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(accountuserbinding.FieldAccountID)
+	}
+	query.Where(predicate.AccountUserBinding(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(account.UserBindingsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

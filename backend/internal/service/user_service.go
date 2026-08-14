@@ -96,17 +96,18 @@ type UserListFilters struct {
 // 注意这里没有 balance / total_recharged：余额只能经由 AdjustBalance、
 // SetBalance、UpdateBalance、DeductBalance 等原子接口修改，Update 永远不碰它们。
 type UserUpdateFields struct {
-	Email        bool
-	Username     bool
-	Notes        bool
-	PasswordHash bool
-	Role         bool
-	Status       bool
-	Concurrency  bool
-	RPMLimit     bool
-	SignupSource bool
-	LastLoginAt  bool
-	LastActiveAt bool
+	Email         bool
+	Username      bool
+	Notes         bool
+	PasswordHash  bool
+	Role          bool
+	Status        bool
+	Concurrency   bool
+	RPMLimit      bool
+	DefaultAmount bool
+	SignupSource  bool
+	LastLoginAt   bool
+	LastActiveAt  bool
 	// BalanceNotifySettings 覆盖 balance_notify_enabled / _threshold_type / _threshold。
 	BalanceNotifySettings bool
 	// BalanceNotifyExtraEmails 与上一项分开，避免"改通知阈值"覆盖并发的"加通知邮箱"。
@@ -119,6 +120,13 @@ type UserUpdateFields struct {
 type BalanceChange struct {
 	Old float64
 	New float64
+}
+
+// BatchBalanceChange 记录批量重置前后的用户余额。
+type BatchBalanceChange struct {
+	UserID int64
+	Old    float64
+	New    float64
 }
 
 // IsEmpty 报告该次 Update 是否不写任何列（此时仓储直接返回，不产生写操作）。
@@ -179,6 +187,12 @@ type UserRepository interface {
 	UpdateTotpSecret(ctx context.Context, userID int64, encryptedSecret *string) error
 	EnableTotp(ctx context.Context, userID int64) error
 	DisableTotp(ctx context.Context, userID int64) error
+}
+
+// UserBalanceBatchResetter 是批量恢复默认余额所需的可选仓储能力。
+// 单独成窄接口，避免所有 UserRepository 测试桩都被迫实现管理端专用方法。
+type UserBalanceBatchResetter interface {
+	BatchResetBalance(ctx context.Context, userIDs []int64) ([]BatchBalanceChange, error)
 }
 
 // RegistrationEmailDomainRepository 是生产用户仓储为非白名单域名单账户兜底策略提供的可选能力。

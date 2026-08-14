@@ -69,11 +69,20 @@ type openAIResetAdminServiceStub struct {
 	account *service.Account
 	err     error
 	calls   int
+
+	resetBoundUsersCalls  []int64
+	resetBoundUsersResult int
+	resetBoundUsersErr    error
 }
 
 func (s *openAIResetAdminServiceStub) GetAccount(context.Context, int64) (*service.Account, error) {
 	s.calls++
 	return s.account, s.err
+}
+
+func (s *openAIResetAdminServiceStub) ResetBoundUserBalances(_ context.Context, accountID int64) (int, error) {
+	s.resetBoundUsersCalls = append(s.resetBoundUsersCalls, accountID)
+	return s.resetBoundUsersResult, s.resetBoundUsersErr
 }
 
 type openAIQuotaResetEnvelope struct {
@@ -483,4 +492,59 @@ func TestNewOpenAIOAuthHandlerKeepsNilQuotaCapabilitiesGuarded(t *testing.T) {
 		router.ServeHTTP(recorder, httptest.NewRequest(tc.method, tc.path, nil))
 		require.Equal(t, http.StatusBadRequest, recorder.Code, "%s %s", tc.method, tc.path)
 	}
+}
+
+// OpenAI 重置成功（credit 已消耗）后，联动重置绑定用户余额，并把数量回填到响应。
+func TestOpenAIResetQuota_ResetsBoundUserBalancesAfterSuccess(t *testing.T) {
+	quota := successfulOpenAIQuotaWorkflowStub()
+	recoverer := &openAIAccountStateRecovererStub{}
+	adminService := recoveredAccountStub()
+	adminService.resetBoundUsersResult = 3
+	handler := &OpenAIOAuthHandler{
+		adminService:     adminService,
+		quotaService:     quota,
+		rateLimitService: recoverer,
+	}
+
+	status, envelope := performOpenAIQuotaResetRequest(t, handler)
+
+	require.Equal(t, http.StatusOK, status)
+	require.Equal(t, []int64{42}, adminService.resetBoundUsersCalls)
+	require.Equal(t, 3, envelope.Data.BoundUsersReset)
+}
+
+// 联动失败是 best-effort：不阻断主流程，响应仍成功。
+func TestOpenAIResetQuota_BoundUsersResetFailureDoesNotBlock(t *testing.T) {
+	quota := successfulOpenAIQuotaWorkflowStub()
+	recoverer := &openAIAccountStateRecovererStub{}
+	adminService := recoveredAccountStub()
+	adminService.resetBoundUsersErr = errors.New("binding storage unavailable")
+	handler := &OpenAIOAuthHandler{
+		adminService:     adminService,
+		quotaService:     quota,
+		rateLimitService: recoverer,
+	}
+
+	status, envelope := performOpenAIQuotaResetRequest(t, handler)
+
+	require.Equal(t, http.StatusOK, status)
+	require.Equal(t, []int64{42}, adminService.resetBoundUsersCalls)
+	require.Zero(t, envelope.Data.BoundUsersReset)
+}
+
+// 重置失败（credit 未消耗）时不触发联动。
+func TestOpenAIResetQuota_ResetFailureSkipsBoundUsersReset(t *testing.T) {
+	quota := &openAIQuotaWorkflowStub{resetErr: errors.New("upstream reset failed")}
+	recoverer := &openAIAccountStateRecovererStub{}
+	adminService := &openAIResetAdminServiceStub{}
+	handler := &OpenAIOAuthHandler{
+		adminService:     adminService,
+		quotaService:     quota,
+		rateLimitService: recoverer,
+	}
+
+	status, _ := performOpenAIQuotaResetRequest(t, handler)
+
+	require.Equal(t, http.StatusInternalServerError, status)
+	require.Empty(t, adminService.resetBoundUsersCalls)
 }

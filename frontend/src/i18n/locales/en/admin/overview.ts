@@ -455,6 +455,13 @@ export default {
         success: 'Updated limits for {count} users',
         failed: 'Failed to update user limits'
       },
+      batchResetBalance: {
+        action: 'Reset balance ({count})',
+        title: 'Reset Balances',
+        confirm: 'Reset the balance of {count} selected users to their default amount? This cannot be undone.',
+        success: 'Reset balance for {count} users',
+        failed: 'Failed to reset user balances'
+      },
       editUser: 'Edit User',
       deleteUser: 'Delete User',
       deleteConfirmMessage: "Are you sure you want to delete user '{email}'? This action cannot be undone.",
@@ -514,7 +521,9 @@ export default {
         selectStatus: 'Select status',
         rpmLimit: 'Requests Per Minute (RPM)',
         rpmLimitPlaceholder: '0 = unlimited',
-        rpmLimitHint: 'Max requests per minute for this user; 0 = unlimited. Acts as a fallback only when the group has no rpm_limit set.'
+        rpmLimitHint: 'Max requests per minute for this user; 0 = unlimited. Acts as a fallback only when the group has no rpm_limit set.',
+        defaultAmountHint: 'Target balance when resetting this user; leave empty to use the global default balance',
+        defaultAmountPlaceholder: 'Leave empty to use the global default balance'
       },
       columns: {
         user: 'User',
@@ -526,6 +535,7 @@ export default {
         groups: 'Groups',
         subscriptions: 'Subscriptions',
         balance: 'Balance',
+        defaultAmount: 'Default Amount',
         balancePlatformQuota: 'Balance (Platform Quota)',
         usage: 'Usage',
         usageAnthropic: 'Usage (Claude)',

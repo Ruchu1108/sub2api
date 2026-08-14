@@ -105,6 +105,8 @@ export interface AdminUser extends User {
   // 管理员备注（普通用户接口不返回）
   notes: string
   last_used_at?: string | null
+  // 默认金额：批量重置余额时恢复到的目标值
+  default_amount: number
   // 用户专属分组倍率配置 (group_id -> rate_multiplier)
   group_rates?: Record<number, number>
   // 当前并发数（仅管理员列表接口返回）
@@ -1955,6 +1957,7 @@ export interface UpdateUserRequest {
   notes?: string
   role?: 'admin' | 'user'
   balance?: number
+  default_amount?: number
   concurrency?: number
   rpm_limit?: number
   status?: 'active' | 'disabled'

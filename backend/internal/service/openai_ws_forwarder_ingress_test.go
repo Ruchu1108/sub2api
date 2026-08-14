@@ -836,6 +836,89 @@ func TestBuildOpenAIWSReplayInputSequence(t *testing.T) {
 		require.Equal(t, "hello", gjson.GetBytes(items[0], "text").String())
 		require.Equal(t, "world", gjson.GetBytes(items[1], "text").String())
 	})
+
+	t.Run("previous_orphan_custom_tool_call_is_not_replayed_without_output", func(t *testing.T) {
+		previous := []json.RawMessage{
+			json.RawMessage(`{"type":"input_text","text":"before compaction"}`),
+			json.RawMessage(`{"id":"ctc_orphan","type":"custom_tool_call","call_id":"call_orphan","name":"exec","input":"{}"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previous,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"continue after compaction"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 2)
+		require.Equal(t, "before compaction", gjson.GetBytes(items[0], "text").String())
+		require.Equal(t, "continue after compaction", gjson.GetBytes(items[1], "text").String())
+		for _, item := range items {
+			require.NotEqual(t, "call_orphan", gjson.GetBytes(item, "call_id").String())
+		}
+	})
+
+	t.Run("current_custom_tool_call_is_preserved", func(t *testing.T) {
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			lastFull,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"custom_tool_call","call_id":"call_current","name":"exec","input":"{}"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 2)
+		require.Equal(t, "call_current", gjson.GetBytes(items[1], "call_id").String())
+	})
+
+	t.Run("current_compaction_trigger_replaces_replayed_trigger", func(t *testing.T) {
+		previous := []json.RawMessage{
+			json.RawMessage(`{"type":"input_text","text":"before first compaction"}`),
+			json.RawMessage(`{"type":"compaction_trigger"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previous,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"continue"},{"type":"compaction_trigger"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 3)
+		require.Equal(t, "before first compaction", gjson.GetBytes(items[0], "text").String())
+		require.Equal(t, "continue", gjson.GetBytes(items[1], "text").String())
+		require.Equal(t, "compaction_trigger", gjson.GetBytes(items[2], "type").String())
+		triggerCount := 0
+		for _, item := range items {
+			if gjson.GetBytes(item, "type").String() == "compaction_trigger" {
+				triggerCount++
+			}
+		}
+		require.Equal(t, 1, triggerCount)
+	})
+
+	t.Run("historical_compaction_trigger_is_not_replayed_without_new_trigger", func(t *testing.T) {
+		previous := []json.RawMessage{
+			json.RawMessage(`{"type":"input_text","text":"before compaction"}`),
+			json.RawMessage(`{"type":"compaction_trigger"}`),
+			json.RawMessage(`{"type":"compaction","encrypted_content":"summary"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previous,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"ordinary follow-up"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 3)
+		require.Equal(t, "before compaction", gjson.GetBytes(items[0], "text").String())
+		require.Equal(t, "compaction", gjson.GetBytes(items[1], "type").String(), "compaction result is conversation context and must be preserved")
+		require.Equal(t, "ordinary follow-up", gjson.GetBytes(items[2], "text").String())
+		for _, item := range items {
+			require.NotEqual(t, "compaction_trigger", gjson.GetBytes(item, "type").String())
+		}
+	})
 }
 
 func TestOpenAIWSRawPayloadHasToolCallOutput(t *testing.T) {

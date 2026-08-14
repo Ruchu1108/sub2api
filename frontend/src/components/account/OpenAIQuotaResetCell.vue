@@ -385,6 +385,11 @@ const confirmReset = async () => {
       resetWarning.value = t('admin.accounts.openaiQuotaReset.resetAccountRecoveryFailed')
     } else if (result.warning_code === 'account_state_refresh_failed') {
       resetWarning.value = t('admin.accounts.openaiQuotaReset.resetAccountRefreshFailed')
+    } else if (result.bound_users_reset && result.bound_users_reset > 0) {
+      resetMessage.value = t('admin.accounts.openaiQuotaReset.resetSuccessWithBoundUsers', {
+        windows: result.windows_reset,
+        boundUsers: result.bound_users_reset
+      })
     } else {
       resetMessage.value = t('admin.accounts.openaiQuotaReset.resetSuccess', {
         windows: result.windows_reset

@@ -227,6 +227,8 @@ func (Account) Edges() []ent.Edge {
 			Unique(),
 		// usage_logs: 该账户的使用日志
 		edge.To("usage_logs", UsageLog.Type),
+		// user_bindings: 绑定到该账号的用户（一对多，仅作重置联动标记）
+		edge.To("user_bindings", AccountUserBinding.Type),
 	}
 }
 

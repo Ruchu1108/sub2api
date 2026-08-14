@@ -265,6 +265,9 @@ type OpenAIForwardResult struct {
 	Duration              time.Duration
 	FirstTokenMs          *int
 	ClientDisconnect      bool
+	// ClientCancelRequested means the downstream explicitly canceled this turn,
+	// even if the upstream raced to a nominally successful terminal event.
+	ClientCancelRequested bool
 	ImageCount            int
 	ImageSize             string
 	ImageInputSize        string
@@ -292,7 +295,13 @@ type OpenAIForwardResult struct {
 // that may clear model-scoped transient state. The zero value remains a success
 // for existing non-WS callers.
 func (r *OpenAIForwardResult) SucceededForScheduling() bool {
-	if r == nil || !r.OpenAIWSMode || r.UpstreamTerminalEvent == "" {
+	if r == nil {
+		return true
+	}
+	if r.OpenAIWSMode && (r.ClientDisconnect || r.ClientCancelRequested) {
+		return false
+	}
+	if !r.OpenAIWSMode || r.UpstreamTerminalEvent == "" {
 		return true
 	}
 	switch r.UpstreamTerminalEvent {

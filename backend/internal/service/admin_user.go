@@ -125,6 +125,16 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 		balance = s.settingService.GetDefaultBalance(ctx)
 	}
 
+	defaultBalance := 0.0
+	if input.DefaultAmount != nil {
+		defaultBalance = *input.DefaultAmount
+	} else if s.settingService != nil {
+		defaultBalance = s.settingService.GetDefaultBalance(ctx)
+	}
+	if defaultBalance < 0 {
+		return nil, errors.New("default_amount must be >= 0")
+	}
+
 	// 角色可由管理员在创建时指定(admin/user);未提供时默认 user。
 	role, err := normalizeUserRole(input.Role, RoleUser)
 	if err != nil {
@@ -137,6 +147,7 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 		Notes:         input.Notes,
 		Role:          role,
 		Balance:       balance,
+		DefaultAmount: defaultBalance,
 		Concurrency:   input.Concurrency,
 		RPMLimit:      input.RPMLimit,
 		Status:        StatusActive,
@@ -272,6 +283,14 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 	if input.RPMLimit != nil {
 		user.RPMLimit = *input.RPMLimit
 		fields.RPMLimit = true
+	}
+
+	if input.DefaultAmount != nil {
+		if *input.DefaultAmount < 0 {
+			return nil, errors.New("default_amount must be >= 0")
+		}
+		user.DefaultAmount = *input.DefaultAmount
+		fields.DefaultAmount = true
 	}
 
 	if input.AllowedGroups != nil {
@@ -503,6 +522,77 @@ func (s *adminServiceImpl) BatchUpdateLimits(ctx context.Context, userIDs []int6
 		}
 	}
 	return affected, nil
+}
+
+// BatchResetUserBalance 把一批用户的余额置为其各自默认金额（default_amount）。
+// 与单用户调账一致：余额发生变化的用户会写入 admin_balance 调整记录（审计留痕），
+// 并失效鉴权/计费缓存。单条 SQL 原子更新，不受并发计费扣款干扰。
+func (s *adminServiceImpl) BatchResetUserBalance(ctx context.Context, userIDs []int64) (int, error) {
+	cleaned := make([]int64, 0, len(userIDs))
+	seen := make(map[int64]struct{}, len(userIDs))
+	for _, userID := range userIDs {
+		if userID <= 0 {
+			continue
+		}
+		if _, ok := seen[userID]; ok {
+			continue
+		}
+		seen[userID] = struct{}{}
+		cleaned = append(cleaned, userID)
+	}
+	if len(cleaned) == 0 {
+		return 0, nil
+	}
+
+	resetter, ok := s.userRepo.(UserBalanceBatchResetter)
+	if !ok {
+		return 0, errors.New("batch balance reset unavailable")
+	}
+	changes, err := resetter.BatchResetBalance(ctx, cleaned)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, change := range changes {
+		balanceDiff := change.New - change.Old
+		if balanceDiff == 0 {
+			continue
+		}
+		if s.authCacheInvalidator != nil {
+			s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, change.UserID)
+		}
+		if s.billingCacheService != nil {
+			userID := change.UserID
+			go func() {
+				cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := s.billingCacheService.InvalidateUserBalance(cacheCtx, userID); err != nil {
+					logger.LegacyPrintf("service.admin", "invalidate user balance cache failed: user_id=%d err=%v", userID, err)
+				}
+			}()
+		}
+
+		code, err := GenerateRedeemCode()
+		if err != nil {
+			logger.LegacyPrintf("service.admin", "failed to generate adjustment redeem code: %v", err)
+			continue
+		}
+		now := time.Now()
+		userID := change.UserID
+		adjustmentRecord := &RedeemCode{
+			Code:   code,
+			Type:   AdjustmentTypeAdminBalance,
+			Value:  balanceDiff,
+			Status: StatusUsed,
+			UsedBy: &userID,
+			Notes:  "batch reset to default amount",
+		}
+		adjustmentRecord.UsedAt = &now
+		if err := s.redeemCodeRepo.Create(ctx, adjustmentRecord); err != nil {
+			logger.LegacyPrintf("service.admin", "failed to create balance adjustment redeem code: %v", err)
+		}
+	}
+	return len(changes), nil
 }
 
 func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, balance float64, operation string, notes string) (*User, error) {

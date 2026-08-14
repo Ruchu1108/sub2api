@@ -137,6 +137,24 @@ type AdminService interface {
 	ResetAccountQuota(ctx context.Context, id int64) error
 }
 
+// AdminUserBalanceResetter exposes the optional batch balance-reset capability.
+// Keeping it separate avoids forcing every AdminService test double to implement it.
+type AdminUserBalanceResetter interface {
+	BatchResetUserBalance(ctx context.Context, userIDs []int64) (int, error)
+}
+
+// AdminAccountUserBindingManager manages the users linked to an account.
+// Bindings only control reset linkage; they do not affect account scheduling.
+type AdminAccountUserBindingManager interface {
+	ListBoundUsers(ctx context.Context, accountID int64) ([]User, error)
+	SetBoundUsers(ctx context.Context, accountID int64, userIDs []int64) (int, error)
+}
+
+// AdminBoundUserBalanceResetter exposes best-effort linked balance resets.
+type AdminBoundUserBalanceResetter interface {
+	ResetBoundUserBalances(ctx context.Context, accountID int64) (int, error)
+}
+
 // CreateUserInput represents input for creating a new user via admin operations.
 type CreateUserInput struct {
 	Email         string
@@ -145,6 +163,7 @@ type CreateUserInput struct {
 	Notes         string
 	Role          string // 空字符串表示使用默认角色(user);合法值 admin/user
 	Balance       *float64
+	DefaultAmount *float64 // 用户默认金额（批量重置目标）；nil 时取全局默认余额设置
 	Concurrency   int
 	RPMLimit      int
 	AllowedGroups []int64
@@ -159,6 +178,7 @@ type UpdateUserInput struct {
 	Notes         *string
 	Role          string   // 空字符串表示"未提供"(不修改);合法值 admin/user
 	Balance       *float64 // 使用指针区分"未提供"和"设置为0"
+	DefaultAmount *float64 // 使用指针区分"未提供"和"设置为0"
 	Concurrency   *int     // 使用指针区分"未提供"和"设置为0"
 	RPMLimit      *int     // 使用指针区分"未提供"和"设置为0"
 	Status        string

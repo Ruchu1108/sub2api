@@ -259,6 +259,46 @@ var (
 			},
 		},
 	}
+	// AccountUserBindingsColumns holds the columns for the "account_user_bindings" table.
+	AccountUserBindingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "account_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// AccountUserBindingsTable holds the schema information for the "account_user_bindings" table.
+	AccountUserBindingsTable = &schema.Table{
+		Name:       "account_user_bindings",
+		Columns:    AccountUserBindingsColumns,
+		PrimaryKey: []*schema.Column{AccountUserBindingsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "account_user_bindings_accounts_user_bindings",
+				Columns:    []*schema.Column{AccountUserBindingsColumns[3]},
+				RefColumns: []*schema.Column{AccountsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "account_user_bindings_users_account_bindings",
+				Columns:    []*schema.Column{AccountUserBindingsColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "accountuserbinding_account_id_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{AccountUserBindingsColumns[3], AccountUserBindingsColumns[4]},
+			},
+			{
+				Name:    "accountuserbinding_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{AccountUserBindingsColumns[4]},
+			},
+		},
+	}
 	// AnnouncementsColumns holds the columns for the "announcements" table.
 	AnnouncementsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1782,6 +1822,7 @@ var (
 		{Name: "password_hash", Type: field.TypeString, Size: 255},
 		{Name: "role", Type: field.TypeString, Size: 20, Default: "user"},
 		{Name: "balance", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "default_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "frozen_balance", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "concurrency", Type: field.TypeInt, Default: 5},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
@@ -1809,7 +1850,7 @@ var (
 			{
 				Name:    "user_status",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[10]},
+				Columns: []*schema.Column{UsersColumns[11]},
 			},
 			{
 				Name:    "user_deleted_at",
@@ -2078,6 +2119,7 @@ var (
 		APIKeysTable,
 		AccountsTable,
 		AccountGroupsTable,
+		AccountUserBindingsTable,
 		AnnouncementsTable,
 		AnnouncementReadsTable,
 		AuthIdentitiesTable,
@@ -2132,6 +2174,11 @@ func init() {
 	AccountGroupsTable.ForeignKeys[1].RefTable = GroupsTable
 	AccountGroupsTable.Annotation = &entsql.Annotation{
 		Table: "account_groups",
+	}
+	AccountUserBindingsTable.ForeignKeys[0].RefTable = AccountsTable
+	AccountUserBindingsTable.ForeignKeys[1].RefTable = UsersTable
+	AccountUserBindingsTable.Annotation = &entsql.Annotation{
+		Table: "account_user_bindings",
 	}
 	AnnouncementsTable.Annotation = &entsql.Annotation{
 		Table: "announcements",

@@ -11,6 +11,10 @@ import (
 
 type stubAdminService struct {
 	users                               []service.User
+	boundUsers                          []service.User
+	setBoundUsersAccountID              int64
+	setBoundUsersUserIDs                []int64
+	batchResetUserIDs                   []int64
 	apiKeys                             []service.APIKey
 	groups                              []service.Group
 	accounts                            []service.Account
@@ -199,6 +203,25 @@ func (s *stubAdminService) BatchUpdateConcurrency(ctx context.Context, userIDs [
 
 func (s *stubAdminService) BatchUpdateLimits(ctx context.Context, userIDs []int64, concurrency, rpmLimit *int) (int, error) {
 	return len(userIDs), nil
+}
+
+func (s *stubAdminService) BatchResetUserBalance(_ context.Context, userIDs []int64) (int, error) {
+	s.batchResetUserIDs = append([]int64(nil), userIDs...)
+	return len(userIDs), nil
+}
+
+func (s *stubAdminService) ListBoundUsers(context.Context, int64) ([]service.User, error) {
+	return s.boundUsers, nil
+}
+
+func (s *stubAdminService) SetBoundUsers(_ context.Context, accountID int64, userIDs []int64) (int, error) {
+	s.setBoundUsersAccountID = accountID
+	s.setBoundUsersUserIDs = append([]int64(nil), userIDs...)
+	return len(userIDs), nil
+}
+
+func (s *stubAdminService) ResetBoundUserBalances(context.Context, int64) (int, error) {
+	return 0, nil
 }
 
 func (s *stubAdminService) GetUserAPIKeys(ctx context.Context, userID int64, page, pageSize int, sortBy, sortOrder string) ([]service.APIKey, int64, error) {

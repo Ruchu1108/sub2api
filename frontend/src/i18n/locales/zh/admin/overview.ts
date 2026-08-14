@@ -455,6 +455,13 @@ export default {
         success: '已更新 {count} 个用户的限制',
         failed: '批量更新用户限制失败'
       },
+      batchResetBalance: {
+        action: '批量重置余额（{count}）',
+        title: '批量重置余额',
+        confirm: '确定将所选 {count} 个用户的余额重置为各自的默认金额吗？此操作无法撤销。',
+        success: '已重置 {count} 个用户的余额',
+        failed: '批量重置余额失败'
+      },
       editUser: '编辑用户',
       deleteUser: '删除用户',
       deleteConfirmMessage: "确定要删除用户 '{email}' 吗？此操作无法撤销。",
@@ -506,6 +513,7 @@ export default {
         groups: '分组',
         subscriptions: '订阅分组',
         balance: '余额',
+        defaultAmount: '默认金额',
         balancePlatformQuota: '余额(平台配额)',
         usage: '用量',
         usageAnthropic: '用量 (Claude)',
@@ -579,7 +587,9 @@ export default {
         selectStatus: '选择状态',
         rpmLimit: '每分钟请求数 (RPM)',
         rpmLimitPlaceholder: '0 表示不限制',
-        rpmLimitHint: '该用户每分钟最大请求数，0 = 不限制；仅在所用分组未设置 rpm_limit 时作为兜底生效'
+        rpmLimitHint: '该用户每分钟最大请求数，0 = 不限制；仅在所用分组未设置 rpm_limit 时作为兜底生效',
+        defaultAmountHint: '批量重置余额时恢复到的目标金额；留空则使用全局默认余额',
+        defaultAmountPlaceholder: '留空则使用全局默认余额'
       },
       adjustBalance: '调整余额',
       adjustConcurrency: '调整并发数',

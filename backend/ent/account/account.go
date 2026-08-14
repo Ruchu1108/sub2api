@@ -88,6 +88,8 @@ const (
 	EdgeChildren = "children"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeUserBindings holds the string denoting the user_bindings edge name in mutations.
+	EdgeUserBindings = "user_bindings"
 	// EdgeAccountGroups holds the string denoting the account_groups edge name in mutations.
 	EdgeAccountGroups = "account_groups"
 	// Table holds the table name of the account in the database.
@@ -119,6 +121,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "account_id"
+	// UserBindingsTable is the table that holds the user_bindings relation/edge.
+	UserBindingsTable = "account_user_bindings"
+	// UserBindingsInverseTable is the table name for the AccountUserBinding entity.
+	// It exists in this package in order to avoid circular dependency with the "accountuserbinding" package.
+	UserBindingsInverseTable = "account_user_bindings"
+	// UserBindingsColumn is the table column denoting the user_bindings relation/edge.
+	UserBindingsColumn = "account_id"
 	// AccountGroupsTable is the table that holds the account_groups relation/edge.
 	AccountGroupsTable = "account_groups"
 	// AccountGroupsInverseTable is the table name for the AccountGroup entity.
@@ -457,6 +466,20 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByUserBindingsCount orders the results by user_bindings count.
+func ByUserBindingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserBindingsStep(), opts...)
+	}
+}
+
+// ByUserBindings orders the results by user_bindings terms.
+func ByUserBindings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserBindingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAccountGroupsCount orders the results by account_groups count.
 func ByAccountGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -503,6 +526,13 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newUserBindingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserBindingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, UserBindingsTable, UserBindingsColumn),
 	)
 }
 func newAccountGroupsStep() *sqlgraph.Step {

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/account"
+	"github.com/Wei-Shaw/sub2api/ent/accountuserbinding"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
@@ -633,6 +634,21 @@ func (_u *AccountUpdate) AddUsageLogs(v ...*UsageLog) *AccountUpdate {
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddUserBindingIDs adds the "user_bindings" edge to the AccountUserBinding entity by IDs.
+func (_u *AccountUpdate) AddUserBindingIDs(ids ...int64) *AccountUpdate {
+	_u.mutation.AddUserBindingIDs(ids...)
+	return _u
+}
+
+// AddUserBindings adds the "user_bindings" edges to the AccountUserBinding entity.
+func (_u *AccountUpdate) AddUserBindings(v ...*AccountUserBinding) *AccountUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserBindingIDs(ids...)
+}
+
 // Mutation returns the AccountMutation object of the builder.
 func (_u *AccountUpdate) Mutation() *AccountMutation {
 	return _u.mutation
@@ -711,6 +727,27 @@ func (_u *AccountUpdate) RemoveUsageLogs(v ...*UsageLog) *AccountUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearUserBindings clears all "user_bindings" edges to the AccountUserBinding entity.
+func (_u *AccountUpdate) ClearUserBindings() *AccountUpdate {
+	_u.mutation.ClearUserBindings()
+	return _u
+}
+
+// RemoveUserBindingIDs removes the "user_bindings" edge to AccountUserBinding entities by IDs.
+func (_u *AccountUpdate) RemoveUserBindingIDs(ids ...int64) *AccountUpdate {
+	_u.mutation.RemoveUserBindingIDs(ids...)
+	return _u
+}
+
+// RemoveUserBindings removes "user_bindings" edges to AccountUserBinding entities.
+func (_u *AccountUpdate) RemoveUserBindings(v ...*AccountUserBinding) *AccountUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserBindingIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1144,6 +1181,51 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserBindingsIDs(); len(nodes) > 0 && !_u.mutation.UserBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -1773,6 +1855,21 @@ func (_u *AccountUpdateOne) AddUsageLogs(v ...*UsageLog) *AccountUpdateOne {
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddUserBindingIDs adds the "user_bindings" edge to the AccountUserBinding entity by IDs.
+func (_u *AccountUpdateOne) AddUserBindingIDs(ids ...int64) *AccountUpdateOne {
+	_u.mutation.AddUserBindingIDs(ids...)
+	return _u
+}
+
+// AddUserBindings adds the "user_bindings" edges to the AccountUserBinding entity.
+func (_u *AccountUpdateOne) AddUserBindings(v ...*AccountUserBinding) *AccountUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserBindingIDs(ids...)
+}
+
 // Mutation returns the AccountMutation object of the builder.
 func (_u *AccountUpdateOne) Mutation() *AccountMutation {
 	return _u.mutation
@@ -1851,6 +1948,27 @@ func (_u *AccountUpdateOne) RemoveUsageLogs(v ...*UsageLog) *AccountUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearUserBindings clears all "user_bindings" edges to the AccountUserBinding entity.
+func (_u *AccountUpdateOne) ClearUserBindings() *AccountUpdateOne {
+	_u.mutation.ClearUserBindings()
+	return _u
+}
+
+// RemoveUserBindingIDs removes the "user_bindings" edge to AccountUserBinding entities by IDs.
+func (_u *AccountUpdateOne) RemoveUserBindingIDs(ids ...int64) *AccountUpdateOne {
+	_u.mutation.RemoveUserBindingIDs(ids...)
+	return _u
+}
+
+// RemoveUserBindings removes "user_bindings" edges to AccountUserBinding entities.
+func (_u *AccountUpdateOne) RemoveUserBindings(v ...*AccountUserBinding) *AccountUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserBindingIDs(ids...)
 }
 
 // Where appends a list predicates to the AccountUpdate builder.
@@ -2314,6 +2432,51 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserBindingsIDs(); len(nodes) > 0 && !_u.mutation.UserBindingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.UserBindingsTable,
+			Columns: []string{account.UserBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

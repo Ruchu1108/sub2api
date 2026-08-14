@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Wei-Shaw/sub2api/ent/accountuserbinding"
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
@@ -112,6 +113,20 @@ func (_c *UserCreate) SetBalance(v float64) *UserCreate {
 func (_c *UserCreate) SetNillableBalance(v *float64) *UserCreate {
 	if v != nil {
 		_c.SetBalance(*v)
+	}
+	return _c
+}
+
+// SetDefaultAmount sets the "default_amount" field.
+func (_c *UserCreate) SetDefaultAmount(v float64) *UserCreate {
+	_c.mutation.SetDefaultAmount(v)
+	return _c
+}
+
+// SetNillableDefaultAmount sets the "default_amount" field if the given value is not nil.
+func (_c *UserCreate) SetNillableDefaultAmount(v *float64) *UserCreate {
+	if v != nil {
+		_c.SetDefaultAmount(*v)
 	}
 	return _c
 }
@@ -549,6 +564,21 @@ func (_c *UserCreate) AddPlatformQuotas(v ...*UserPlatformQuota) *UserCreate {
 	return _c.AddPlatformQuotaIDs(ids...)
 }
 
+// AddAccountBindingIDs adds the "account_bindings" edge to the AccountUserBinding entity by IDs.
+func (_c *UserCreate) AddAccountBindingIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddAccountBindingIDs(ids...)
+	return _c
+}
+
+// AddAccountBindings adds the "account_bindings" edges to the AccountUserBinding entity.
+func (_c *UserCreate) AddAccountBindings(v ...*AccountUserBinding) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAccountBindingIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_c *UserCreate) Mutation() *UserMutation {
 	return _c.mutation
@@ -607,6 +637,10 @@ func (_c *UserCreate) defaults() error {
 	if _, ok := _c.mutation.Balance(); !ok {
 		v := user.DefaultBalance
 		_c.mutation.SetBalance(v)
+	}
+	if _, ok := _c.mutation.DefaultAmount(); !ok {
+		v := user.DefaultDefaultAmount
+		_c.mutation.SetDefaultAmount(v)
 	}
 	if _, ok := _c.mutation.FrozenBalance(); !ok {
 		v := user.DefaultFrozenBalance
@@ -693,6 +727,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.Balance(); !ok {
 		return &ValidationError{Name: "balance", err: errors.New(`ent: missing required field "User.balance"`)}
+	}
+	if _, ok := _c.mutation.DefaultAmount(); !ok {
+		return &ValidationError{Name: "default_amount", err: errors.New(`ent: missing required field "User.default_amount"`)}
 	}
 	if _, ok := _c.mutation.FrozenBalance(); !ok {
 		return &ValidationError{Name: "frozen_balance", err: errors.New(`ent: missing required field "User.frozen_balance"`)}
@@ -799,6 +836,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Balance(); ok {
 		_spec.SetField(user.FieldBalance, field.TypeFloat64, value)
 		_node.Balance = value
+	}
+	if value, ok := _c.mutation.DefaultAmount(); ok {
+		_spec.SetField(user.FieldDefaultAmount, field.TypeFloat64, value)
+		_node.DefaultAmount = value
 	}
 	if value, ok := _c.mutation.FrozenBalance(); ok {
 		_spec.SetField(user.FieldFrozenBalance, field.TypeFloat64, value)
@@ -1080,6 +1121,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := _c.mutation.AccountBindingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountBindingsTable,
+			Columns: []string{user.AccountBindingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountuserbinding.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -1213,6 +1270,24 @@ func (u *UserUpsert) UpdateBalance() *UserUpsert {
 // AddBalance adds v to the "balance" field.
 func (u *UserUpsert) AddBalance(v float64) *UserUpsert {
 	u.Add(user.FieldBalance, v)
+	return u
+}
+
+// SetDefaultAmount sets the "default_amount" field.
+func (u *UserUpsert) SetDefaultAmount(v float64) *UserUpsert {
+	u.Set(user.FieldDefaultAmount, v)
+	return u
+}
+
+// UpdateDefaultAmount sets the "default_amount" field to the value that was provided on create.
+func (u *UserUpsert) UpdateDefaultAmount() *UserUpsert {
+	u.SetExcluded(user.FieldDefaultAmount)
+	return u
+}
+
+// AddDefaultAmount adds v to the "default_amount" field.
+func (u *UserUpsert) AddDefaultAmount(v float64) *UserUpsert {
+	u.Add(user.FieldDefaultAmount, v)
 	return u
 }
 
@@ -1620,6 +1695,27 @@ func (u *UserUpsertOne) AddBalance(v float64) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateBalance() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateBalance()
+	})
+}
+
+// SetDefaultAmount sets the "default_amount" field.
+func (u *UserUpsertOne) SetDefaultAmount(v float64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDefaultAmount(v)
+	})
+}
+
+// AddDefaultAmount adds v to the "default_amount" field.
+func (u *UserUpsertOne) AddDefaultAmount(v float64) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.AddDefaultAmount(v)
+	})
+}
+
+// UpdateDefaultAmount sets the "default_amount" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateDefaultAmount() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDefaultAmount()
 	})
 }
 
@@ -2237,6 +2333,27 @@ func (u *UserUpsertBulk) AddBalance(v float64) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateBalance() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateBalance()
+	})
+}
+
+// SetDefaultAmount sets the "default_amount" field.
+func (u *UserUpsertBulk) SetDefaultAmount(v float64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDefaultAmount(v)
+	})
+}
+
+// AddDefaultAmount adds v to the "default_amount" field.
+func (u *UserUpsertBulk) AddDefaultAmount(v float64) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.AddDefaultAmount(v)
+	})
+}
+
+// UpdateDefaultAmount sets the "default_amount" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateDefaultAmount() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDefaultAmount()
 	})
 }
 
