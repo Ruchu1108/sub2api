@@ -54,6 +54,7 @@ type openAIQuotaResetResponse struct {
 	CacheRefreshed        bool                      `json:"cache_refreshed"`
 	AccountStateRecovered bool                      `json:"account_state_recovered"`
 	WarningCode           string                    `json:"warning_code,omitempty"`
+	BoundUsersReset       int                       `json:"bound_users_reset,omitempty"`
 }
 
 // openAIQuotaRefreshResponse is the reset-credit-persisting variant of the quota
@@ -599,6 +600,15 @@ func (h *OpenAIOAuthHandler) ResetQuota(c *gin.Context) {
 	resetResponse := openAIQuotaResetResponse{OpenAIQuotaResetResult: *result}
 	postCtx, cancelPost := openAIQuotaResetPostProcessContext(c.Request.Context())
 	defer cancelPost()
+
+	// 联动重置绑定用户余额（best-effort）：上游重置已经成功，失败不阻断主流程。
+	if boundResetter, ok := h.adminService.(service.AdminBoundUserBalanceResetter); ok {
+		if boundReset, resetErr := boundResetter.ResetBoundUserBalances(postCtx, accountID); resetErr != nil {
+			slog.Warn("openai_quota_reset_bound_users_reset_failed", "account_id", accountID, "error", resetErr)
+		} else if boundReset > 0 {
+			resetResponse.BoundUsersReset = boundReset
+		}
+	}
 
 	// Step 1 — unblocking the account is the whole point of consuming a credit
 	// (#3672 / #3740), so it runs FIRST and is never gated on the display cache.

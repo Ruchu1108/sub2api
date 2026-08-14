@@ -252,6 +252,16 @@
               {{ t('admin.users.bulkLimits.action', { count: selectedCount }) }}
             </button>
 
+            <button
+              v-if="selectedCount > 0"
+              class="btn btn-secondary flex-1 md:flex-initial"
+              data-test="bulk-reset-balance"
+              @click="showBatchResetDialog = true"
+            >
+              <Icon name="refresh" size="md" class="mr-2" />
+              {{ t('admin.users.batchResetBalance.action', { count: selectedCount }) }}
+            </button>
+
             <!-- Create User Button (full width on mobile, auto width on desktop) -->
             <button @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
               <Icon name="plus" size="md" class="mr-2" />
@@ -444,6 +454,10 @@
                 {{ t('admin.users.deposit') }}
               </button>
             </div>
+          </template>
+
+          <template #cell-default_amount="{ value }">
+            <span class="text-sm text-gray-700 dark:text-gray-300">${{ value.toFixed(2) }}</span>
           </template>
 
           <template #cell-balance_platform_quota="{ row }">
@@ -748,6 +762,7 @@
     </Teleport>
 
     <ConfirmDialog :show="showDeleteDialog" :title="t('admin.users.deleteUser')" :message="t('admin.users.deleteConfirm', { email: deletingUser?.email })" :danger="true" @confirm="confirmDelete" @cancel="showDeleteDialog = false" />
+    <ConfirmDialog :show="showBatchResetDialog" :title="t('admin.users.batchResetBalance.title')" :message="t('admin.users.batchResetBalance.confirm', { count: selectedCount })" :danger="true" @confirm="confirmBatchResetBalance" @cancel="showBatchResetDialog = false" />
     <UserCreateModal :show="showCreateModal" @close="showCreateModal = false" @success="loadUsers" />
     <UserEditModal :show="showEditModal" :user="editingUser" @close="closeEditModal" @success="loadUsers" />
     <BulkEditUserModal
@@ -871,6 +886,7 @@ const allColumns = computed<Column[]>(() => [
   { key: 'groups', label: t('admin.users.columns.groups'), sortable: false },
   { key: 'subscriptions', label: t('admin.users.columns.subscriptions'), sortable: false },
   { key: 'balance', label: t('admin.users.columns.balance'), sortable: true },
+  { key: 'default_amount', label: t('admin.users.columns.defaultAmount'), sortable: true },
   { key: 'balance_platform_quota', label: t('admin.users.columns.balancePlatformQuota'), sortable: false },
   { key: 'usage', label: t('admin.users.columns.usage'), sortable: false },
   { key: 'usage_anthropic', label: t('admin.users.columns.usageAnthropic'), sortable: false },
@@ -1025,7 +1041,7 @@ const searchQuery = ref('')
 const USER_SORT_STORAGE_KEY = 'admin-users-table-sort'
 const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' } => {
   const fallback = { sort_by: 'created_at', sort_order: 'desc' as 'asc' | 'desc' }
-  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'concurrency', 'status', 'last_used_at', 'last_active_at', 'created_at'])
+  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'default_amount', 'concurrency', 'status', 'last_used_at', 'last_active_at', 'created_at'])
   try {
     const raw = localStorage.getItem(USER_SORT_STORAGE_KEY)
     if (!raw) return fallback
@@ -1322,6 +1338,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showBulkEditModal = ref(false)
 const showDeleteDialog = ref(false)
+const showBatchResetDialog = ref(false)
 const showApiKeysModal = ref(false)
 const showAttributesModal = ref(false)
 const showPlatformQuotaModal = ref(false)
@@ -1628,6 +1645,20 @@ const loadUsers = async () => {
 const handleBulkLimitsSuccess = async () => {
   clearSelection()
   await loadUsers()
+}
+
+const confirmBatchResetBalance = async () => {
+  const count = selectedCount.value
+  showBatchResetDialog.value = false
+  if (count === 0) return
+  try {
+    const result = await adminAPI.users.batchResetBalance([...selectedIds.value])
+    appStore.showSuccess(t('admin.users.batchResetBalance.success', { count: result.affected }))
+    clearSelection()
+    await loadUsers()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || error.response?.data?.message || t('admin.users.batchResetBalance.failed'))
+  }
 }
 
 let searchTimeout: ReturnType<typeof setTimeout>

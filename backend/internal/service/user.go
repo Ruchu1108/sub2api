@@ -19,6 +19,7 @@ type User struct {
 	PasswordHash   string
 	Role           string
 	Balance        float64
+	DefaultAmount  float64
 	FrozenBalance  float64
 	Concurrency    int
 	Status         string

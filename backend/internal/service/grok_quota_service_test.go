@@ -719,6 +719,15 @@ func TestGrokQuotaServiceQueryQuotaFreeFallsBackToGrok45(t *testing.T) {
 	t.Parallel()
 
 	account := healthyGrokQuotaOAuthAccount(51)
+	// 预填新鲜 observed-models 快照：QueryQuota 成功后会 fire-and-forget 同步上游
+	// /v1/models，与探测请求形成异步竞态，导致断言请求数偶发 3/4 漂移（flaky）。
+	// 快照仍在 TTL 内时同步是 no-op，请求数确定性为 3（billing×2 + probe×1）。
+	account.Extra = map[string]any{
+		grokObservedModelsExtraKey: grokObservedModelsSnapshot{
+			Models:    []string{"grok-4.5"},
+			FetchedAt: time.Now().UTC().Format(time.RFC3339),
+		},
+	}
 	repo := &grokQuotaAccountRepo{mockAccountRepoForPlatform: &mockAccountRepoForPlatform{
 		accountsByID: map[int64]*Account{account.ID: account},
 	}}

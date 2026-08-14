@@ -206,6 +206,14 @@ export async function batchUpdateLimits(
   return data
 }
 
+export async function batchResetBalance(userIds: number[]): Promise<{ affected: number }> {
+  const { data } = await apiClient.post<{ affected: number }>(
+    '/admin/users/batch-reset-balance',
+    { user_ids: userIds }
+  )
+  return data
+}
+
 /**
  * Toggle user status
  * @param id - User ID
@@ -408,6 +416,7 @@ export const usersAPI = {
   updateBalance,
   updateConcurrency,
   batchUpdateLimits,
+  batchResetBalance,
   toggleStatus,
   getUserApiKeys,
   getUserUsageStats,

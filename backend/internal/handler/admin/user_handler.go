@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -65,6 +66,7 @@ type CreateUserRequest struct {
 	Notes         string   `json:"notes"`
 	Role          string   `json:"role" binding:"omitempty,oneof=admin user"`
 	Balance       *float64 `json:"balance"`
+	DefaultAmount *float64 `json:"default_amount"`
 	Concurrency   int      `json:"concurrency"`
 	RPMLimit      int      `json:"rpm_limit"`
 	AllowedGroups []int64  `json:"allowed_groups"`
@@ -79,6 +81,7 @@ type UpdateUserRequest struct {
 	Notes         *string  `json:"notes"`
 	Role          string   `json:"role" binding:"omitempty,oneof=admin user"`
 	Balance       *float64 `json:"balance"`
+	DefaultAmount *float64 `json:"default_amount"`
 	Concurrency   *int     `json:"concurrency"`
 	RPMLimit      *int     `json:"rpm_limit"`
 	Status        string   `json:"status" binding:"omitempty,oneof=active disabled"`
@@ -290,6 +293,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 		Notes:         req.Notes,
 		Role:          req.Role,
 		Balance:       req.Balance,
+		DefaultAmount: req.DefaultAmount,
 		Concurrency:   req.Concurrency,
 		RPMLimit:      req.RPMLimit,
 		AllowedGroups: req.AllowedGroups,
@@ -348,6 +352,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		Notes:         req.Notes,
 		Role:          req.Role,
 		Balance:       req.Balance,
+		DefaultAmount: req.DefaultAmount,
 		Concurrency:   req.Concurrency,
 		RPMLimit:      req.RPMLimit,
 		Status:        req.Status,
@@ -669,6 +674,41 @@ func (h *UserHandler) BatchUpdateLimits(c *gin.Context) {
 		req.Concurrency,
 		req.RPMLimit,
 	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"affected": affected})
+}
+
+// BatchResetBalanceRequest 批量重置余额请求体：把所选用户的余额置为其各自默认金额。
+type BatchResetBalanceRequest struct {
+	UserIDs []int64 `json:"user_ids"`
+}
+
+// BatchResetBalance 批量把所选用户的余额重置为各自默认金额（default_amount）。
+// POST /api/v1/admin/users/batch-reset-balance
+func (h *UserHandler) BatchResetBalance(c *gin.Context) {
+	var req BatchResetBalanceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if len(req.UserIDs) == 0 {
+		response.BadRequest(c, "user_ids is required")
+		return
+	}
+	if len(req.UserIDs) > 500 {
+		response.BadRequest(c, "user_ids cannot exceed 500")
+		return
+	}
+
+	resetter, ok := h.adminService.(service.AdminUserBalanceResetter)
+	if !ok {
+		response.Error(c, http.StatusNotImplemented, "batch balance reset is not available")
+		return
+	}
+	affected, err := resetter.BatchResetUserBalance(c.Request.Context(), req.UserIDs)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

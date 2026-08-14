@@ -140,6 +140,7 @@ func (r *userRepository) create(ctx context.Context, userIn *service.User, guard
 		SetPasswordHash(userIn.PasswordHash).
 		SetRole(userIn.Role).
 		SetBalance(userIn.Balance).
+		SetDefaultAmount(userIn.DefaultAmount).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
 		SetSignupSource(userSignupSourceOrDefault(userIn.SignupSource)).
@@ -305,6 +306,9 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User, field
 	}
 	if fields.RPMLimit {
 		updateOp = updateOp.SetRpmLimit(userIn.RPMLimit)
+	}
+	if fields.DefaultAmount {
+		updateOp = updateOp.SetDefaultAmount(userIn.DefaultAmount)
 	}
 	if fields.Status {
 		updateOp = updateOp.SetStatus(userIn.Status)
@@ -658,6 +662,9 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 		defaultField = false
 	case "balance":
 		field = dbuser.FieldBalance
+		defaultField = false
+	case "default_amount":
+		field = dbuser.FieldDefaultAmount
 		defaultField = false
 	case "concurrency":
 		field = dbuser.FieldConcurrency
@@ -1121,6 +1128,48 @@ func (r *userRepository) BatchUpdateLimits(ctx context.Context, userIDs []int64,
 	}
 	affected, _ := res.RowsAffected()
 	return int(affected), nil
+}
+
+// BatchResetBalance 把一批用户的余额原子地置为其各自 default_amount 值。
+// 返回每个受影响用户变更前后的余额，供上层生成审计调整记录。
+func (r *userRepository) BatchResetBalance(ctx context.Context, userIDs []int64) ([]service.BatchBalanceChange, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+	const updateSQL = `
+WITH prev AS (
+    SELECT id, balance
+    FROM users
+    WHERE id = ANY($1) AND deleted_at IS NULL
+)
+UPDATE users AS u
+SET balance = u.default_amount, updated_at = NOW()
+FROM prev
+WHERE u.id = prev.id
+RETURNING prev.id, prev.balance, u.balance
+`
+	rows, err := clientFromContext(ctx, r.client).QueryContext(ctx, updateSQL, pq.Array(userIDs))
+	if err != nil {
+		return nil, fmt.Errorf("batch reset balance: %w", err)
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+
+	changes := make([]service.BatchBalanceChange, 0, len(userIDs))
+	for rows.Next() {
+		var change service.BatchBalanceChange
+		if err := rows.Scan(&change.UserID, &change.Old, &change.New); err != nil {
+			return nil, err
+		}
+		changes = append(changes, change)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return changes, nil
 }
 
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {

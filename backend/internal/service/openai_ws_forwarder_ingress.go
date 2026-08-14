@@ -25,6 +25,51 @@ func (s *OpenAIGatewayService) openAIWSIngressInterTurnIdleTimeout() time.Durati
 	return time.Duration(s.cfg.Gateway.OpenAIWS.IngressInterTurnIdleTimeoutSeconds) * time.Second
 }
 
+const (
+	openAIWSIngressClientDisconnectDrainTimeout = 1200 * time.Millisecond
+	openAIWSIngressCancelWriteTimeout           = time.Second
+)
+
+func (s *OpenAIGatewayService) openAIWSIngressUpstreamCancelWriteTimeout() time.Duration {
+	timeout := s.openAIWSWriteTimeout()
+	if timeout > 0 && timeout < openAIWSIngressCancelWriteTimeout {
+		return timeout
+	}
+	return openAIWSIngressCancelWriteTimeout
+}
+
+func newOpenAIWSIngressLeaseLostClientCloseError(cause error) error {
+	return NewOpenAIWSClientCloseError(
+		coderws.StatusTryAgainLater,
+		"websocket ingress capacity lease lost; please reconnect",
+		cause,
+	)
+}
+
+func buildOpenAIWSIngressClientDisconnectResult(
+	turnStart time.Time,
+	payload []byte,
+	originalModel string,
+	mappedModel string,
+	usage OpenAIUsage,
+	firstTokenMs *int,
+	responseHeaders http.Header,
+) *OpenAIForwardResult {
+	return &OpenAIForwardResult{
+		Usage:            usage,
+		Model:            originalModel,
+		UpstreamModel:    mappedModel,
+		ServiceTier:      extractOpenAIServiceTierFromBody(payload),
+		ReasoningEffort:  ApplyThinkingEnabledFallback(extractOpenAIReasoningEffortFromBody(payload, mappedModel, originalModel), payload, mappedModel),
+		Stream:           openAIWSPayloadBoolFromRaw(payload, "stream", true),
+		OpenAIWSMode:     true,
+		ClientDisconnect: true,
+		ResponseHeaders:  responseHeaders,
+		Duration:         time.Since(turnStart),
+		FirstTokenMs:     firstTokenMs,
+	}
+}
+
 // newOpenAIWSDownstreamWriteContext binds writes directly to the client
 // lifecycle while excluding the separate ingress-lease cancellation signal.
 // This lets a lease-loss path finish its current client write before
@@ -617,6 +662,72 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		}
 	}
 
+	// ctx_pool historically read the downstream websocket only between turns.
+	// That loses response.cancel (and notices hard disconnects too late) while an
+	// upstream response is in progress. Keep one session-wide reader so the active
+	// relay can forward control messages without racing the inter-turn reader.
+	clientReadCtx, cancelClientRead := context.WithCancel(ctx)
+	defer func() {
+		cancelClientRead()
+	}()
+	clientReadCh := make(chan openAIWSClientReadResult, 1)
+	go func() {
+		for {
+			messageType, payload, readErr := clientConn.Read(clientReadCtx)
+			result := openAIWSClientReadResult{messageType: messageType, payload: payload, err: readErr}
+			select {
+			case clientReadCh <- result:
+			case <-clientReadCtx.Done():
+				return
+			}
+			if readErr != nil {
+				return
+			}
+		}
+	}()
+
+	readIngressClientMessage := func() ([]byte, error) {
+		idleTimeout := s.openAIWSIngressInterTurnIdleTimeout()
+		var timer *time.Timer
+		var timeoutCh <-chan time.Time
+		if idleTimeout > 0 {
+			timer = time.NewTimer(idleTimeout)
+			timeoutCh = timer.C
+			defer timer.Stop()
+		}
+
+		select {
+		case result := <-clientReadCh:
+			if result.err != nil {
+				return nil, result.err
+			}
+			if result.messageType != coderws.MessageText && result.messageType != coderws.MessageBinary {
+				return nil, NewOpenAIWSClientCloseError(
+					coderws.StatusPolicyViolation,
+					fmt.Sprintf("unsupported websocket client message type: %s", result.messageType.String()),
+					nil,
+				)
+			}
+			return result.payload, nil
+		case <-timeoutCh:
+			logOpenAIWSModeInfo("ingress_ws_inter_turn_idle_timeout account_id=%d timeout_seconds=%d", account.ID, int(idleTimeout.Seconds()))
+			return nil, NewOpenAIWSClientCloseError(
+				coderws.StatusNormalClosure,
+				"websocket idle timeout",
+				context.DeadlineExceeded,
+			)
+		case <-clientReadCtx.Done():
+			if cause := context.Cause(clientReadCtx); errors.Is(cause, ErrOpenAIWSIngressLeaseLost) {
+				return nil, newOpenAIWSIngressLeaseLostClientCloseError(cause)
+			}
+			return nil, NewOpenAIWSClientCloseError(
+				coderws.StatusGoingAway,
+				"websocket request canceled",
+				context.Cause(clientReadCtx),
+			)
+		}
+	}
+
 	firstRoutingFields := gjson.GetManyBytes(firstPayload.payloadRaw, "model", "service_tier")
 	wsHeaders, _, buildHdrErr := s.buildOpenAIWSHeaders(
 		ctx,
@@ -825,6 +936,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		usage := OpenAIUsage{}
 		imageCounter := newOpenAIImageOutputCounter()
 		var firstTokenMs *int
+		clientDisconnectedAt := time.Time{}
 		reqStream := openAIWSPayloadBoolFromRaw(payload, "stream", true)
 		turnPreviousResponseID := openAIWSPayloadStringFromRaw(payload, "previous_response_id")
 		turnPreviousResponseIDKind := ClassifyOpenAIPreviousResponseIDKind(turnPreviousResponseID)
@@ -839,6 +951,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		lastEventType := ""
 		needModelReplace := false
 		clientDisconnected := false
+		clientCancelRequested := false
+		upstreamCancelForwarded := false
 		mappedModel := ""
 		var mappedModelBytes []byte
 		if originalModel != "" {
@@ -851,8 +965,165 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				mappedModelBytes = []byte(mappedModel)
 			}
 		}
+		forwardUpstreamCancel := func(cancelPayload []byte, reason string) bool {
+			if upstreamCancelForwarded {
+				return true
+			}
+			if len(cancelPayload) == 0 {
+				cancelPayload = []byte(`{"type":"response.cancel"}`)
+			}
+			// A cancel is best-effort control traffic. Bound it independently so a
+			// stuck upstream socket cannot retain the ingress lease for minutes.
+			if err := lease.WriteJSONWithContextTimeout(context.Background(), json.RawMessage(cancelPayload), s.openAIWSIngressUpstreamCancelWriteTimeout()); err != nil {
+				logOpenAIWSModeInfo(
+					"ingress_ws_upstream_cancel_failed account_id=%d turn=%d conn_id=%s reason=%s cause=%s",
+					account.ID,
+					turn,
+					truncateOpenAIWSLogValue(lease.ConnID(), openAIWSIDValueMaxLen),
+					reason,
+					truncateOpenAIWSLogValue(err.Error(), openAIWSLogValueMaxLen),
+				)
+				return false
+			}
+			upstreamCancelForwarded = true
+			logOpenAIWSModeInfo(
+				"ingress_ws_upstream_cancel_forwarded account_id=%d turn=%d conn_id=%s reason=%s",
+				account.ID,
+				turn,
+				truncateOpenAIWSLogValue(lease.ConnID(), openAIWSIDValueMaxLen),
+				reason,
+			)
+			return true
+		}
+		markClientDisconnected := func(disconnectErr error, source string) {
+			if clientDisconnected {
+				return
+			}
+			clientDisconnected = true
+			clientDisconnectedAt = time.Now()
+			closeStatus, closeReason := summarizeOpenAIWSReadCloseError(disconnectErr)
+			logOpenAIWSModeInfo(
+				"ingress_ws_client_disconnected_drain account_id=%d turn=%d conn_id=%s source=%s close_status=%s close_reason=%s",
+				account.ID,
+				turn,
+				truncateOpenAIWSLogValue(lease.ConnID(), openAIWSIDValueMaxLen),
+				source,
+				closeStatus,
+				truncateOpenAIWSLogValue(closeReason, openAIWSHeaderValueMaxLen),
+			)
+			_ = forwardUpstreamCancel(nil, "client_disconnect")
+		}
+		type upstreamReadResult struct {
+			message []byte
+			err     error
+		}
+		upstreamReadCh := make(chan upstreamReadResult, 1)
+		upstreamReadActive := false
+		startUpstreamRead := func() {
+			if upstreamReadActive {
+				return
+			}
+			upstreamReadActive = true
+			go func() {
+				message, readErr := lease.ReadMessageWithContextTimeout(ctx, s.openAIWSReadTimeout())
+				select {
+				case upstreamReadCh <- upstreamReadResult{message: message, err: readErr}:
+				case <-ctx.Done():
+				}
+			}()
+		}
+		startUpstreamRead()
 		for {
-			upstreamMessage, readErr := lease.ReadMessageWithContextTimeout(ctx, s.openAIWSReadTimeout())
+			var upstreamMessage []byte
+			var readErr error
+			var clientDisconnectDrainCh <-chan time.Time
+			var controlDoneCh <-chan struct{}
+			if clientDisconnected {
+				remaining := openAIWSIngressClientDisconnectDrainTimeout - time.Since(clientDisconnectedAt)
+				if remaining <= 0 {
+					lease.MarkBroken()
+					return buildOpenAIWSIngressClientDisconnectResult(turnStart, payload, originalModel, mappedModel, usage, firstTokenMs, lease.HandshakeHeaders()), nil
+				}
+				clientDisconnectDrainCh = time.After(remaining)
+			} else {
+				controlDoneCh = ctx.Done()
+			}
+			if controlCause := context.Cause(ctx); errors.Is(controlCause, ErrOpenAIWSIngressLeaseLost) {
+				lease.MarkBroken()
+				return nil, newOpenAIWSIngressLeaseLostClientCloseError(controlCause)
+			}
+			select {
+			case upstreamResult := <-upstreamReadCh:
+				upstreamReadActive = false
+				upstreamMessage = upstreamResult.message
+				readErr = upstreamResult.err
+			case clientResult := <-clientReadCh:
+				if clientResult.err != nil {
+					controlCause := context.Cause(ctx)
+					if errors.Is(controlCause, ErrOpenAIWSIngressLeaseLost) {
+						lease.MarkBroken()
+						return nil, newOpenAIWSIngressLeaseLostClientCloseError(controlCause)
+					}
+					if isOpenAIWSClientDisconnectError(clientResult.err) || errors.Is(clientResult.err, context.Canceled) {
+						markClientDisconnected(clientResult.err, "read_client")
+						continue
+					}
+					lease.MarkBroken()
+					return nil, wrapOpenAIWSIngressTurnError(
+						"read_client",
+						fmt.Errorf("read client websocket control message: %w", clientResult.err),
+						wroteDownstream,
+					)
+				}
+				if clientResult.messageType != coderws.MessageText && clientResult.messageType != coderws.MessageBinary {
+					lease.MarkBroken()
+					return nil, NewOpenAIWSClientCloseError(
+						coderws.StatusPolicyViolation,
+						fmt.Sprintf("unsupported websocket client message type: %s", clientResult.messageType.String()),
+						nil,
+					)
+				}
+
+				clientEventType := strings.TrimSpace(gjson.GetBytes(clientResult.payload, "type").String())
+				switch clientEventType {
+				case "response.cancel":
+					if !forwardUpstreamCancel(clientResult.payload, "client_message") {
+						lease.MarkBroken()
+						return nil, wrapOpenAIWSIngressTurnError(
+							"write_upstream_cancel",
+							errors.New("write upstream websocket cancel failed"),
+							wroteDownstream,
+						)
+					}
+					clientCancelRequested = true
+				case "response.create":
+					lease.MarkBroken()
+					return nil, NewOpenAIWSClientCloseError(
+						coderws.StatusPolicyViolation,
+						"response.create received while a response is active",
+						nil,
+					)
+				default:
+					lease.MarkBroken()
+					return nil, NewOpenAIWSClientCloseError(
+						coderws.StatusPolicyViolation,
+						fmt.Sprintf("unsupported websocket client event type while response is active: %s", clientEventType),
+						nil,
+					)
+				}
+				continue
+			case <-controlDoneCh:
+				controlCause := context.Cause(ctx)
+				if errors.Is(controlCause, ErrOpenAIWSIngressLeaseLost) {
+					lease.MarkBroken()
+					return nil, newOpenAIWSIngressLeaseLostClientCloseError(controlCause)
+				}
+				markClientDisconnected(controlCause, "control_context")
+				continue
+			case <-clientDisconnectDrainCh:
+				lease.MarkBroken()
+				return buildOpenAIWSIngressClientDisconnectResult(turnStart, payload, originalModel, mappedModel, usage, firstTokenMs, lease.HandshakeHeaders()), nil
+			}
 			if readErr != nil {
 				lease.MarkBroken()
 				return nil, wrapOpenAIWSIngressTurnError(
@@ -990,16 +1261,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				replayCollector.AddEvent(eventType, upstreamMessage)
 				if err := writeClientMessage(upstreamMessage); err != nil {
 					if isOpenAIWSClientDisconnectError(err) {
-						clientDisconnected = true
-						closeStatus, closeReason := summarizeOpenAIWSReadCloseError(err)
-						logOpenAIWSModeInfo(
-							"ingress_ws_client_disconnected_drain account_id=%d turn=%d conn_id=%s close_status=%s close_reason=%s",
-							account.ID,
-							turn,
-							truncateOpenAIWSLogValue(lease.ConnID(), openAIWSIDValueMaxLen),
-							closeStatus,
-							truncateOpenAIWSLogValue(closeReason, openAIWSHeaderValueMaxLen),
-						)
+						markClientDisconnected(err, "write_client")
 					} else {
 						return nil, wrapOpenAIWSIngressTurnError(
 							"write_client",
@@ -1052,6 +1314,8 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					Stream:                        reqStream,
 					OpenAIWSMode:                  true,
 					UpstreamTerminalEvent:         terminalEvent,
+					ClientDisconnect:              clientDisconnected,
+					ClientCancelRequested:         clientCancelRequested,
 					ResponseHeaders:               lease.HandshakeHeaders(),
 					Duration:                      time.Since(turnStart),
 					FirstTokenMs:                  firstTokenMs,
@@ -1069,6 +1333,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				}
 				return result, nil
 			}
+			startUpstreamRead()
 		}
 	}
 
@@ -1333,6 +1598,38 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			currentTurnReplayInput = nextReplayInput
 			currentTurnReplayInputExists = nextReplayInputExists
 		}
+		// The previous response contained replay-only tool calls that never
+		// received an output. Keeping previous_response_id would cause Responses
+		// to validate that half-open call before processing the user's next input.
+		// Rebuild a clean full history instead of fabricating a tool result.
+		if currentPreviousResponseID != "" &&
+			!openAIWSRawPayloadHasToolCallOutput(currentPayload) &&
+			openAIWSRawItemsContainOrphanToolCalls(lastTurnReplayInput) &&
+			!openAIWSRawItemsHasFunctionCallOutput(currentTurnReplayInput) {
+			updatedPayload, removed, dropErr := dropPreviousResponseIDFromRawPayload(currentPayload)
+			if dropErr != nil {
+				return fmt.Errorf("drop previous_response_id for orphan tool call replay: %w", dropErr)
+			}
+			if removed {
+				updatedWithInput, setInputErr := setOpenAIWSPayloadInputSequence(
+					updatedPayload,
+					currentTurnReplayInput,
+					currentTurnReplayInputExists,
+				)
+				if setInputErr != nil {
+					return fmt.Errorf("set clean replay input after orphan tool call: %w", setInputErr)
+				}
+				currentPayload = updatedWithInput
+				currentPayloadBytes = len(updatedWithInput)
+				currentPreviousResponseID = ""
+				logOpenAIWSModeInfo(
+					"ingress_ws_orphan_tool_call_recovery account_id=%d turn=%d conn_id=%s action=drop_previous_response_id_full_create",
+					account.ID,
+					turn,
+					truncateOpenAIWSLogValue(sessionConnID, openAIWSIDValueMaxLen),
+				)
+			}
+		}
 		replayHasFunctionCallOutput := currentTurnReplayInputExists &&
 			openAIWSRawItemsHasFunctionCallOutput(currentTurnReplayInput)
 		hasFunctionCallOutput = hasFunctionCallOutput || replayHasFunctionCallOutput
@@ -1594,42 +1891,55 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		if result == nil {
 			return errors.New("websocket turn result is nil")
 		}
-		responseID := strings.TrimSpace(result.RequestID)
-		lastTurnResponseID = responseID
-		lastTurnPayload = cloneOpenAIWSPayloadBytes(currentPayload)
-		lastTurnReplayInput = cloneOpenAIWSRawMessages(currentTurnReplayInput)
-		lastTurnReplayInputExists = currentTurnReplayInputExists
-		if result.wsReplayInputExists {
-			lastTurnReplayInput = append(lastTurnReplayInput, cloneOpenAIWSRawMessages(result.wsReplayInput)...)
-			lastTurnReplayInputExists = true
+		if result.ClientDisconnect {
+			lastTurnClean = false
+			sessionLease.MarkBroken()
+			return nil
 		}
-		nextStrictState, strictStateErr := buildOpenAIWSIngressPreviousTurnStrictState(currentPayload)
-		if strictStateErr != nil {
-			lastTurnStrictState = nil
-			logOpenAIWSModeInfo(
-				"ingress_ws_prev_response_strict_state_skip account_id=%d turn=%d conn_id=%s reason=build_error cause=%s",
-				account.ID,
-				turn,
-				truncateOpenAIWSLogValue(connID, openAIWSIDValueMaxLen),
-				truncateOpenAIWSLogValue(strictStateErr.Error(), openAIWSLogValueMaxLen),
-			)
+		responseID := strings.TrimSpace(result.RequestID)
+		if result.SucceededForScheduling() {
+			lastTurnResponseID = responseID
+			lastTurnPayload = cloneOpenAIWSPayloadBytes(currentPayload)
+			lastTurnReplayInput = cloneOpenAIWSRawMessages(currentTurnReplayInput)
+			lastTurnReplayInputExists = currentTurnReplayInputExists
+			if result.wsReplayInputExists {
+				lastTurnReplayInput = append(lastTurnReplayInput, cloneOpenAIWSRawMessages(result.wsReplayInput)...)
+				lastTurnReplayInputExists = true
+			}
+			nextStrictState, strictStateErr := buildOpenAIWSIngressPreviousTurnStrictState(currentPayload)
+			if strictStateErr != nil {
+				lastTurnStrictState = nil
+				logOpenAIWSModeInfo(
+					"ingress_ws_prev_response_strict_state_skip account_id=%d turn=%d conn_id=%s reason=build_error cause=%s",
+					account.ID,
+					turn,
+					truncateOpenAIWSLogValue(connID, openAIWSIDValueMaxLen),
+					truncateOpenAIWSLogValue(strictStateErr.Error(), openAIWSLogValueMaxLen),
+				)
+			} else {
+				lastTurnStrictState = nextStrictState
+			}
 		} else {
-			lastTurnStrictState = nextStrictState
+			lastTurnResponseID = ""
+			lastTurnPayload = nil
+			lastTurnReplayInput = nil
+			lastTurnReplayInputExists = false
+			lastTurnStrictState = nil
 		}
 
-		if responseID != "" && stateStore != nil {
+		if result.SucceededForScheduling() && responseID != "" && stateStore != nil {
 			ttl := s.openAIWSResponseStickyTTL()
 			logOpenAIWSBindResponseAccountWarn(groupID, account.ID, responseID, stateStore.BindResponseAccount(ctx, groupID, responseID, account.ID, ttl))
 			stateStore.BindResponseConn(responseID, connID, ttl)
 		}
-		if stateStore != nil && storeDisabled && sessionHash != "" {
+		if result.SucceededForScheduling() && stateStore != nil && storeDisabled && sessionHash != "" {
 			stateStore.BindSessionConn(groupID, sessionHash, connID, s.openAIWSSessionStickyTTL())
 		}
-		if connID != "" {
+		if result.SucceededForScheduling() && connID != "" {
 			preferredConnID = connID
 		}
 
-		nextClientMessage, readErr := readClientMessage()
+		nextClientMessage, readErr := readIngressClientMessage()
 		if readErr != nil {
 			if isOpenAIWSClientDisconnectError(readErr) {
 				closeStatus, closeReason := summarizeOpenAIWSReadCloseError(readErr)

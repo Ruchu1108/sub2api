@@ -90,6 +90,11 @@ func Balance(v float64) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldBalance, v))
 }
 
+// DefaultAmount applies equality check predicate on the "default_amount" field. It's identical to DefaultAmountEQ.
+func DefaultAmount(v float64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldDefaultAmount, v))
+}
+
 // FrozenBalance applies equality check predicate on the "frozen_balance" field. It's identical to FrozenBalanceEQ.
 func FrozenBalance(v float64) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldFrozenBalance, v))
@@ -538,6 +543,46 @@ func BalanceLT(v float64) predicate.User {
 // BalanceLTE applies the LTE predicate on the "balance" field.
 func BalanceLTE(v float64) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldBalance, v))
+}
+
+// DefaultAmountEQ applies the EQ predicate on the "default_amount" field.
+func DefaultAmountEQ(v float64) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldDefaultAmount, v))
+}
+
+// DefaultAmountNEQ applies the NEQ predicate on the "default_amount" field.
+func DefaultAmountNEQ(v float64) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldDefaultAmount, v))
+}
+
+// DefaultAmountIn applies the In predicate on the "default_amount" field.
+func DefaultAmountIn(vs ...float64) predicate.User {
+	return predicate.User(sql.FieldIn(FieldDefaultAmount, vs...))
+}
+
+// DefaultAmountNotIn applies the NotIn predicate on the "default_amount" field.
+func DefaultAmountNotIn(vs ...float64) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldDefaultAmount, vs...))
+}
+
+// DefaultAmountGT applies the GT predicate on the "default_amount" field.
+func DefaultAmountGT(v float64) predicate.User {
+	return predicate.User(sql.FieldGT(FieldDefaultAmount, v))
+}
+
+// DefaultAmountGTE applies the GTE predicate on the "default_amount" field.
+func DefaultAmountGTE(v float64) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldDefaultAmount, v))
+}
+
+// DefaultAmountLT applies the LT predicate on the "default_amount" field.
+func DefaultAmountLT(v float64) predicate.User {
+	return predicate.User(sql.FieldLT(FieldDefaultAmount, v))
+}
+
+// DefaultAmountLTE applies the LTE predicate on the "default_amount" field.
+func DefaultAmountLTE(v float64) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldDefaultAmount, v))
 }
 
 // FrozenBalanceEQ applies the EQ predicate on the "frozen_balance" field.
@@ -1676,6 +1721,29 @@ func HasPlatformQuotas() predicate.User {
 func HasPlatformQuotasWith(preds ...predicate.UserPlatformQuota) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newPlatformQuotasStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAccountBindings applies the HasEdge predicate on the "account_bindings" edge.
+func HasAccountBindings() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AccountBindingsTable, AccountBindingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAccountBindingsWith applies the HasEdge predicate on the "account_bindings" edge with a given conditions (other predicates).
+func HasAccountBindingsWith(preds ...predicate.AccountUserBinding) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newAccountBindingsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

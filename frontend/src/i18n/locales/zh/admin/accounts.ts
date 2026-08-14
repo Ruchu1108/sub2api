@@ -447,6 +447,7 @@ export default {
         expirationDetails: '重置次数到期明细',
         noCreditsAvailable: '没有可用的重置次数',
         resetSuccess: '已重置 {windows} 个窗口，次数和账号状态已更新',
+        resetSuccessWithBoundUsers: '已重置 {windows} 个窗口，并联动重置 {boundUsers} 个绑定用户的余额',
         resetCacheRefreshFailed: '窗口已重置、账号状态已恢复，但重置次数未能回读，请重新查询次数。',
         resetAccountRecoveryFailed: '窗口已重置，但账号状态恢复失败，请手动恢复账号状态。',
         resetAccountRefreshFailed: '窗口、账号状态和重置次数缓存已更新，但无法加载最新账号显示。',
@@ -454,6 +455,15 @@ export default {
         confirmTitle: '确认重置周限',
         confirmMessage: '将消耗 1 次重置次数立即恢复当前窗口，剩余 {count} 次。此操作不可撤销，确定继续吗？'
       },
+      boundUsers: '绑定用户',
+      boundUsersTitle: '绑定用户 - {name}',
+      boundUsersHint: 'OpenAI 账号重置限流成功后，会把绑定用户的余额重置为各自默认金额。绑定关系不影响账号调度。',
+      boundUsersNoResults: '没有匹配的用户',
+      boundUsersSelectedCount: '已选择 {count} 个用户',
+      boundUsersSaving: '保存中...',
+      boundUsersSaved: '已更新绑定用户（{count} 个）',
+      boundUsersSaveFailed: '保存绑定用户失败',
+      boundUsersLoadFailed: '加载绑定用户失败',
       tier: {
         free: 'Free',
         pro: 'Pro',

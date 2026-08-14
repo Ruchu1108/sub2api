@@ -3051,6 +3051,69 @@ func (h *AccountHandler) GetAntigravityDefaultModelMapping(c *gin.Context) {
 	response.Success(c, domain.DefaultAntigravityModelMapping)
 }
 
+// GetBoundUsers 返回账号绑定的用户列表。
+// GET /api/v1/admin/accounts/:id/bound-users
+func (h *AccountHandler) GetBoundUsers(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+
+	if _, err := h.adminService.GetAccount(c.Request.Context(), accountID); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	bindingManager, ok := h.adminService.(service.AdminAccountUserBindingManager)
+	if !ok {
+		response.Error(c, http.StatusNotImplemented, "account-user bindings are not available")
+		return
+	}
+	users, err := bindingManager.ListBoundUsers(c.Request.Context(), accountID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	out := make([]*dto.AdminUser, 0, len(users))
+	for i := range users {
+		out = append(out, dto.UserFromServiceAdmin(&users[i]))
+	}
+	response.Success(c, gin.H{"users": out})
+}
+
+type SetBoundUsersRequest struct {
+	UserIDs []int64 `json:"user_ids"`
+}
+
+// SetBoundUsers 全量替换账号绑定的用户集合（空数组表示解绑全部）。
+func (h *AccountHandler) SetBoundUsers(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+	var req SetBoundUsersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if len(req.UserIDs) > 500 {
+		response.BadRequest(c, "user_ids cannot exceed 500")
+		return
+	}
+	bindingManager, ok := h.adminService.(service.AdminAccountUserBindingManager)
+	if !ok {
+		response.Error(c, http.StatusNotImplemented, "account-user bindings are not available")
+		return
+	}
+	count, err := bindingManager.SetBoundUsers(c.Request.Context(), accountID, req.UserIDs)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"bound_count": count})
+}
+
 // sanitizeExtraBaseRPM 对 extra map 中的 base_rpm 值进行范围校验和归一化。
 // 负值归零，超过 10000 截断为 10000。extra 为 nil 或不含 base_rpm 时无操作。
 func sanitizeExtraBaseRPM(extra map[string]any) {

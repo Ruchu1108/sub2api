@@ -9,13 +9,15 @@ const {
   getAllGroups,
   getBatchUsersUsage,
   listEnabledDefinitions,
-  getBatchUserAttributes
+  getBatchUserAttributes,
+  batchResetBalance
 } = vi.hoisted(() => ({
   listUsers: vi.fn(),
   getAllGroups: vi.fn(),
   getBatchUsersUsage: vi.fn(),
   listEnabledDefinitions: vi.fn(),
-  getBatchUserAttributes: vi.fn()
+  getBatchUserAttributes: vi.fn(),
+  batchResetBalance: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -23,7 +25,8 @@ vi.mock('@/api/admin', () => ({
     users: {
       list: listUsers,
       toggleStatus: vi.fn(),
-      delete: vi.fn()
+      delete: vi.fn(),
+      batchResetBalance
     },
     groups: {
       getAll: getAllGroups
@@ -61,6 +64,7 @@ const createAdminUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   email: 'scoped@example.com',
   role: 'user',
   balance: 0,
+  default_amount: 0,
   concurrency: 1,
   status: 'active',
   allowed_groups: [],
@@ -119,6 +123,18 @@ const BulkEditUserModalStub = {
   `
 }
 
+const ConfirmDialogStub = {
+  props: ['show', 'title', 'message'],
+  emits: ['confirm', 'cancel'],
+  template: `
+    <div v-if="show" data-test="confirm-dialog">
+      <span data-test="confirm-dialog-message">{{ message }}</span>
+      <button data-test="confirm-dialog-confirm" @click="$emit('confirm')">confirm</button>
+      <button data-test="confirm-dialog-cancel" @click="$emit('cancel')">cancel</button>
+    </div>
+  `
+}
+
 describe('admin UsersView', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -129,6 +145,7 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockReset()
     listEnabledDefinitions.mockReset()
     getBatchUserAttributes.mockReset()
+    batchResetBalance.mockReset()
 
     listUsers.mockResolvedValue({
       items: [createAdminUser()],
@@ -368,5 +385,110 @@ describe('admin UsersView', () => {
     expect(wrapper.get('[data-test="row-order"]').text()).toBe('refreshed-page-two@example.com')
     expect(wrapper.find('[data-test="bulk-edit-limits"]').exists()).toBe(false)
     expect(wrapper.get('[data-test="selected-keys"]').text()).toBe('')
+  })
+
+  it('resets selected users balance to their default amount via bulk reset', async () => {
+    batchResetBalance.mockResolvedValue({ affected: 1 })
+
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          BulkEditUserModal: BulkEditUserModalStub,
+          UserPlatformQuotaModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    // 未选中任何用户时不显示批量重置按钮
+    expect(wrapper.find('[data-test="bulk-reset-balance"]').exists()).toBe(false)
+
+    await wrapper.get('[data-test="select-42"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="bulk-reset-balance"]').exists()).toBe(true)
+
+    // 点击按钮弹出确认 Dialog，未确认前不调用接口
+    await wrapper.get('[data-test="bulk-reset-balance"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="confirm-dialog"]').exists()).toBe(true)
+    expect(wrapper.get('[data-test="confirm-dialog-message"]').text()).toBe('admin.users.batchResetBalance.confirm')
+    expect(batchResetBalance).not.toHaveBeenCalled()
+
+    // 点击确认后调用接口并刷新
+    await wrapper.get('[data-test="confirm-dialog-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(batchResetBalance).toHaveBeenCalledWith([42])
+    expect(listUsers).toHaveBeenCalled()
+    expect(wrapper.get('[data-test="selected-keys"]').text()).toBe('')
+    expect(wrapper.find('[data-test="confirm-dialog"]').exists()).toBe(false)
+  })
+
+  it('skips batch reset when confirm dialog is cancelled', async () => {
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          BulkEditUserModal: BulkEditUserModalStub,
+          UserPlatformQuotaModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-test="select-42"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-test="bulk-reset-balance"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="confirm-dialog"]').exists()).toBe(true)
+    await wrapper.get('[data-test="confirm-dialog-cancel"]').trigger('click')
+    await flushPromises()
+
+    expect(batchResetBalance).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-test="selected-keys"]').text()).toBe('42')
+    expect(wrapper.find('[data-test="confirm-dialog"]').exists()).toBe(false)
   })
 })

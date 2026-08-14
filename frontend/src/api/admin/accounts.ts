@@ -851,6 +851,7 @@ export interface OpenAIQuotaResetResult {
   account?: Account | null
   cache_refreshed: boolean
   account_state_recovered: boolean
+  bound_users_reset?: number
   warning_code?:
     | 'reset_credit_cache_refresh_failed'
     | 'account_state_recovery_failed'
@@ -891,6 +892,32 @@ export async function resetOpenAIQuota(id: number): Promise<OpenAIQuotaResetResu
     `/admin/openai/accounts/${id}/reset-quota`,
     undefined,
     { timeout: 90_000 }
+  )
+  return data
+}
+
+export interface BoundUserSummary {
+  id: number
+  email: string
+  username?: string
+  balance: number
+  default_amount: number
+}
+
+export async function getBoundUsers(accountId: number): Promise<BoundUserSummary[]> {
+  const { data } = await apiClient.get<{ users: BoundUserSummary[] }>(
+    `/admin/accounts/${accountId}/bound-users`
+  )
+  return data.users
+}
+
+export async function setBoundUsers(
+  accountId: number,
+  userIds: number[]
+): Promise<{ bound_count: number }> {
+  const { data } = await apiClient.put<{ bound_count: number }>(
+    `/admin/accounts/${accountId}/bound-users`,
+    { user_ids: userIds }
   )
   return data
 }
@@ -1031,6 +1058,8 @@ export const accountsAPI = {
   revertProxyFallback,
   refreshOpenAIQuota,
   resetOpenAIQuota,
+  getBoundUsers,
+  setBoundUsers,
   createSparkShadow,
   getUpstreamBillingProbeSettings,
   updateUpstreamBillingProbeSettings,
