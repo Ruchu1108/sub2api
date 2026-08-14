@@ -1,0 +1,214 @@
+backend/internal/handler/admin/user_handler_batch_reset_test.go
+  s_c3d06eb18fe027::t_48525d6a7ef6ba 1-71
+backend/internal/service/openai_gateway_service.go
+  s_c3d06eb18fe027::t_8d8878b13d3751 268-270,298-304
+backend/internal/handler/admin/user_handler.go
+  s_c3d06eb18fe027::t_fc04ffb1535336 69,84,296,355,684-705,717
+  s_c3d06eb18fe027::t_f49bd6a6d9194e 9,708
+  s_c3d06eb18fe027::t_2e196b118b0770 706-707,709-711,714-715
+  s_c3d06eb18fe027::t_d8ba34856f7f82 712-713
+  s_c3d06eb18fe027::t_6e4cc8d5c084a9 716
+  s_c3d06eb18fe027::t_0ddc996fb37c8d 718
+frontend/src/api/admin/accounts.ts
+  s_c3d06eb18fe027::t_371bfa47e0c88f 854,900-904,908-911,915-916,918-922,1061-1062
+  s_c3d06eb18fe027::t_06cc76b0daa620 899,905-907,912-914,917,923-924
+backend/internal/service/user_service.go
+  s_c3d06eb18fe027::t_78f6076c61f27e 99-106,108-110
+  s_c3d06eb18fe027::t_db1b14ca35f1e8 192-195
+  s_c3d06eb18fe027::t_3c9312eb2f32be 107,125-131,196
+  s_c3d06eb18fe027::t_3e39a3849d6d1d 197
+backend/ent/user/user.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 32-33,94-95,189-195,215,275-276,352-356,624-637,742-746,748
+  s_c3d06eb18fe027::t_0dea888ab7ddf5 747
+backend/internal/service/admin_account_binding.go
+  s_c3d06eb18fe027::t_99c92f64c945fa 1-162
+backend/internal/server/routes/admin.go
+  s_c3d06eb18fe027::t_fc04ffb1535336 308,391-392
+backend/ent/accountuserbinding_update.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-458
+backend/internal/handler/admin/account_handler_bound_users_test.go
+  s_c3d06eb18fe027::t_48525d6a7ef6ba 1-95
+frontend/src/i18n/locales/en/admin/accounts.ts
+  s_c3d06eb18fe027::t_fb008d31d26696 1475,1483-1491
+backend/ent/accountuserbinding_create.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-660
+backend/internal/service/openai_ws_forwarder_payload.go
+  s_c3d06eb18fe027::t_8d8878b13d3751 594-693,733-734,737-738,743-744
+backend/ent/accountuserbinding_query.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-718
+backend/internal/service/content_moderation_runtime_cache_test.go
+  s_c3d06eb18fe027::t_0bc52cc8c3f0ce 276
+backend/ent/user_create.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 14,120-133,567-581,641-644,731-733,840-843,1124-1139,1276-1293,1701-1721,2339-2358
+  s_c3d06eb18fe027::t_a0f87b933a8189 2359
+backend/ent/schema/account.go
+  s_c3d06eb18fe027::t_62089c25f98890 230-231
+backend/ent/migrate/schema.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 262-301,1825,1853,2122,2178-2182
+backend/internal/service/user.go
+  s_c3d06eb18fe027::t_3c9312eb2f32be 22
+backend/internal/repository/api_key_repo.go
+  s_c3d06eb18fe027::t_3c9312eb2f32be 924
+frontend/src/api/admin/users.ts
+  s_c3d06eb18fe027::t_06cc76b0daa620 209,215-216
+  s_c3d06eb18fe027::t_371bfa47e0c88f 210-214,419
+backend/ent/account_update.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 15,637-651,732-752,1191-1235,1858-1872,1953-1973,2442-2484,2486
+  s_c3d06eb18fe027::t_4b36bdb449205d 2485
+frontend/src/i18n/locales/zh/admin/accounts.ts
+  s_c3d06eb18fe027::t_fb008d31d26696 450,458-466
+backend/internal/repository/user_repo.go
+  s_c3d06eb18fe027::t_3c9312eb2f32be 143,310-312,666-668,1133-1172
+  s_c3d06eb18fe027::t_dff28fe8b7c8ac 1173-1174
+backend/internal/service/admin_user.go
+  s_c3d06eb18fe027::t_223d76c69c3514 294,527-546,552-597
+  s_c3d06eb18fe027::t_9616578c6b865f 128-137,150,288-293
+  s_c3d06eb18fe027::t_db1b14ca35f1e8 547-551
+  s_c3d06eb18fe027::t_efaffebf7a1a26 295
+backend/ent/account_create.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 15,492-506,906-914,921
+  s_c3d06eb18fe027::t_c0f3d748672cd8 915-920
+backend/ent/accountuserbinding.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-185
+backend/migrations/223_account_user_bindings.sql
+  s_c3d06eb18fe027::t_62089c25f98890 1-14
+backend/ent/intercept/intercept.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 13,191-217,1199-1200
+backend/ent/predicate/predicate.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 18-20
+backend/internal/handler/admin/openai_oauth_handler.go
+  s_c3d06eb18fe027::t_fc04ffb1535336 57,604,611
+  s_c3d06eb18fe027::t_2e196b118b0770 605-610
+  s_c3d06eb18fe027::t_74a7600e4737f9 612
+backend/ent/accountuserbinding_delete.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-88
+backend/ent/hook/hook.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 48-59
+frontend/src/types/index.ts
+  s_c3d06eb18fe027::t_371bfa47e0c88f 108-109,1960
+frontend/src/views/admin/UsersView.vue
+  s_c3d06eb18fe027::t_f03f092c735dc4 255-264,459-462,765,889,1044,1341,1650-1661
+  s_c3d06eb18fe027::t_95eaf04dd2ca8a 1662-1663
+frontend/src/i18n/locales/zh/admin/overview.ts
+  s_c3d06eb18fe027::t_0573d861f0889f 458-464,516,590-592
+backend/internal/service/auth_oauth_email_flow.go
+  s_c3d06eb18fe027::t_78f6076c61f27e 157-159,163-164,244-246,250-252
+  s_c3d06eb18fe027::t_934af202982ecf 160-162,247-249
+backend/ent/tx.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 23-24,231
+frontend/src/i18n/locales/en/admin/overview.ts
+  s_c3d06eb18fe027::t_0573d861f0889f 458-464,524-526,538
+backend/ent/user_query.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 16,54,379-400,628,779-789,879,893,1013-1019,1445-1474
+backend/internal/handler/admin/admin_service_stub_test.go
+  s_c3d06eb18fe027::t_22dae91c1b9ce5 14-17,208-225
+  s_c3d06eb18fe027::t_06c440fded19be 226
+backend/ent/account/where.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1723-1745
+backend/ent/schema/user.go
+  s_c3d06eb18fe027::t_62089c25f98890 52-55,142-143
+backend/internal/service/openai_ws_forwarder_ingress_session_test.go
+  s_c3d06eb18fe027::t_6bd3f22574df1d 5,38-86,247,374,383,1448,1454,1482,1488,1495,1504,1509,1515,1563,1568,1575,1581,1586,1593,1595,4644,4670,4681,4699,4709,4768,4773,4775,4783,4793,4824,4829,4857,4862,4869,4878,4883,4893,4944,4949,4956,4962,4967,4979,4981,5012,5030,5069,5080,5086
+  s_c3d06eb18fe027::t_62e48c4bc946ff 1410-1447,1449-1453,1455-1481,1483-1487,1489-1494,1496-1503,1505-1508,1510-1514,1516-1562,1564-1567,1569-1574,1576-1580,1582-1585,1587-1592,1594,1596,4516-4518,4523,4530,4618,4628-4629,4635-4643,4645-4669,4671-4680,4682-4698,4700-4708,4710-4767,4769-4772,4774,4776-4782,4784-4792,4794-4823,4825-4828,4830-4856,4858-4861,4863-4868,4870-4877,4879-4882,4884-4892,4894-4943,4945-4948,4950-4955,4957-4961,4963-4966,4968-4978,4980,4982-5011,5013-5029,5031-5068,5070-5079,5081-5085,5087-5091
+backend/ent/account.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 102-103,108,160-168,172,461-464
+  s_c3d06eb18fe027::t_3c2ccbcdd983ff 465
+backend/internal/service/admin_service_batch_reset_balance_test.go
+  s_c3d06eb18fe027::t_48525d6a7ef6ba 1-96
+backend/internal/handler/dto/mappers.go
+  s_c3d06eb18fe027::t_223d76c69c3514 71-75
+backend/ent/account/account.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 91-92,124-130,469-482,531-535,537
+  s_c3d06eb18fe027::t_f3dc92d2111bd5 536
+backend/ent/client.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 20,73-74,161,293,352,418-427,438-447,463-464,913-928,1088-1252,6189-6204,7033-7042,7045-7054
+backend/internal/service/auth_service.go
+  s_c3d06eb18fe027::t_934af202982ecf 242-244,620-622,770-772
+  s_c3d06eb18fe027::t_78f6076c61f27e 239-241,245-246,616-619,623-625,766-769,773-775
+frontend/src/components/account/OpenAIQuotaResetCell.vue
+  s_c3d06eb18fe027::t_371bfa47e0c88f 388-392
+backend/migrations/222_user_default_amount.sql
+  s_c3d06eb18fe027::t_62089c25f98890 1-4
+backend/ent/runtime/runtime.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 10,270-284,2210-2213,2215,2219,2223,2229,2235,2239,2243,2249,2253,2257,2261,2265
+frontend/src/components/admin/user/UserCreateModal.vue
+  s_c3d06eb18fe027::t_b898281bdbac0d 57-61,99,101-102,106
+  s_c3d06eb18fe027::t_b24d1401546390 90,126
+backend/ent/accountuserbinding/where.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-257
+backend/ent/ent.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 17,118
+frontend/src/components/account/__tests__/OpenAIQuotaResetCell.bound_users.spec.ts
+  s_c3d06eb18fe027::t_48525d6a7ef6ba 1-112
+frontend/src/components/admin/account/AccountActionMenu.vue
+  s_c3d06eb18fe027::t_b24d1401546390 75
+  s_c3d06eb18fe027::t_371bfa47e0c88f 57-60
+backend/internal/service/admin_service.go
+  s_c3d06eb18fe027::t_2e196b118b0770 140-156
+  s_c3d06eb18fe027::t_9616578c6b865f 166,181
+  s_c3d06eb18fe027::t_62c4ab7df525d0 157
+backend/ent/accountuserbinding/accountuserbinding.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 1-129
+backend/internal/service/openai_ws_forwarder_ingress.go
+  s_c3d06eb18fe027::t_8d8878b13d3751 28-72,665-730,939,954-955,968-1035,1037-1126,1264,1317-1318,1336,1601-1632,1894-1898,1900-1921,1923-1927,1930,1935,1938,1942
+frontend/src/views/admin/__tests__/UsersView.spec.ts
+  s_c3d06eb18fe027::t_6bd3f22574df1d 12-13,19-20,28-29,67
+  s_c3d06eb18fe027::t_abf9759e6bba1c 126-137,148,389-493
+backend/ent/account_query.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 18,37,186-207,427,490-500,590,596,654-660,856-873,878,884
+  s_c3d06eb18fe027::t_df7f53ca0b9245 874-877,879-883,885
+backend/ent/user.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 34-35,104-105,110,230-238,242,255,327-332,518-522,574-575
+  s_c3d06eb18fe027::t_44068559d3b340 576
+backend/internal/handler/admin/account_handler.go
+  s_c3d06eb18fe027::t_fc04ffb1535336 3054-3066,3073-3101,3107-3108,3110-3116
+  s_c3d06eb18fe027::t_2e196b118b0770 3067-3072,3102-3106,3109
+backend/ent/user/where.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 93-97,548-587,1732-1746,1752-1753
+  s_c3d06eb18fe027::t_a6b4973cec8a20 1747-1751,1754
+backend/ent/schema/account_user_binding.go
+  s_c3d06eb18fe027::t_62089c25f98890 1-64
+frontend/src/views/admin/AccountsView.vue
+  s_c3d06eb18fe027::t_2acc8dd6f670ae 512,2308-2310
+  s_c3d06eb18fe027::t_b898281bdbac0d 459-460,2311-2312
+  s_c3d06eb18fe027::t_591fcbd19f154b 2313-2314
+backend/ent/mutation.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 17,71,2338-2340,4112-4165,4977,4993-4995,5029-5034,5041,5051-5053,5079-5084,5091,5107-5109,5127-5128,5166-5168,5658-6248,48854-48855,48918-48920,49309-49364,50845-50898,50933,50955-50957,51031-51032,51090-51091,51184-51190,51321-51323,51349-51350,51377-51383,51506-51508,51566,51606-51608,51694-51699,51706,51746-51748,51834-51839,51846,51886-51888,51922-51923,51979-51981
+backend/ent/user_update.go
+  s_c3d06eb18fe027::t_e1572523c1eb04 14,133-153,652-666,945-965,1079-1084,1763-1807,1917-1937,2436-2450,2729-2749,2893-2898,3577-3619,3621
+  s_c3d06eb18fe027::t_9a05d5beae8ba3 3620
+backend/internal/handler/dto/types.go
+  s_c3d06eb18fe027::t_223d76c69c3514 48-49
+frontend/src/components/admin/account/AccountBoundUsersModal.vue
+  s_c3d06eb18fe027::t_6051d74c12402f 1-154
+backend/internal/service/auth_email_oauth_auto.go
+  s_c3d06eb18fe027::t_78f6076c61f27e 183-186,190-192
+  s_c3d06eb18fe027::t_934af202982ecf 187-189
+frontend/src/components/admin/user/UserEditModal.vue
+  s_c3d06eb18fe027::t_b24d1401546390 98
+  s_c3d06eb18fe027::t_b898281bdbac0d 59-63,102,132
+backend/internal/handler/admin/openai_oauth_handler_reset_quota_test.go
+  s_c3d06eb18fe027::t_ee30631c4a465b 72-75,83-87,496-550
+backend/internal/service/grok_quota_service_test.go
+  s_c3d06eb18fe027::t_201c0df584e780 722-730
+backend/internal/service/openai_ws_forwarder_ingress_test.go
+  s_c3d06eb18fe027::t_d76ea760baac4e 839-921
+backend/internal/service/openai_ws_forwarder_test.go
+  s_c3d06eb18fe027::t_95da62a5a56ce2 125-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "88d8cc69d717813f5a5e47a80c96267631defbdc",
+  "prompts": {},
+  "sessions": {
+    "s_c3d06eb18fe027": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fff9a-65c8-7432-b8c8-66360025e486",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "wangdonghan <wang.donghan@cesgroup.com.cn>"
+    }
+  }
+}
