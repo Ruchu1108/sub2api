@@ -1,0 +1,216 @@
+frontend/src/constants/__tests__/platforms.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-26
+backend/internal/handler/no_account_error_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 116-117,139-140,149-160,219-220
+frontend/src/views/admin/ops/components/OpsDashboardHeader.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 5,113
+backend/internal/pkg/apicompat/responses_tool_search_discoveries.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-263
+backend/internal/pkg/apicompat/responses_client_tools.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 30-36,83,125-129,152,163-166,168-171,196,198-199,203-205,234-237,240-242,247-249,252,254-257,291-330
+  s_c40ff765e8dcb4::t_f4f01e05b53531 331
+frontend/src/components/account/__tests__/longContextBilling.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-29
+backend/internal/handler/no_account_error.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 109-113
+backend/internal/service/openai_gateway_forward.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 107-108,291,464,1045-1060,1073-1075
+backend/internal/service/usage_log.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 131-132
+backend/internal/service/channel.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 99-100,125-141,367,384-395,397
+  s_c40ff765e8dcb4::t_faae922bfd48fd 396
+backend/internal/config/env_reachability_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 48-61,79
+backend/internal/service/openai_gateway_grok_tool_protocol_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 68-121,231-255
+  s_c40ff765e8dcb4::t_b7b8c6fd641cef 256
+frontend/src/components/account/__tests__/EditAccountModal.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 346-517
+backend/internal/model/error_passthrough_rule.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 4-8,39-46,51-60
+backend/internal/config/config.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 833-879,2619-2623
+backend/internal/service/account_stats_pricing.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 71
+backend/internal/service/openai_ws_http_bridge_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 173-297,1022,1026-1028
+frontend/src/api/admin/channels.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 20-23,48-49
+backend/internal/service/openai_apikey_responses_probe.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 128-131,139
+frontend/src/views/admin/GroupsView.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 4425-4428,4747,4751,4755
+backend/internal/service/ops_upstream_context.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 47-54,97-106
+  s_c40ff765e8dcb4::t_64fce15f56ebda 107-108
+backend/internal/service/account_test_service.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 288-294,3071-3077
+frontend/src/components/admin/channel/__tests__/types.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 3,6,8,16-60,70-73
+backend/internal/service/model_pricing_resolver.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 212-214,223-225,256-258,277-281,285-294,297,299-301,304,306-308,311,316-320,323,325-327
+backend/internal/service/gateway_request_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 45-60
+backend/internal/service/gateway_service.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 622-624
+frontend/src/views/admin/__tests__/platformFilterCatalogUsage.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-33
+backend/internal/service/upstream_billing_probe_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 343-374
+frontend/src/components/admin/user/UserEditModal.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 34-38,82,89,100-111,113-114
+  s_c40ff765e8dcb4::t_bf3745c15b2c86 112
+backend/internal/service/openai_apikey_responses_probe_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 52-91
+frontend/src/i18n/locales/zh/admin/accounts.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 324-327
+backend/internal/domain/constants.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 47
+backend/internal/repository/proxy_probe_service_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 169-184
+frontend/src/views/admin/ChannelsView.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 451,637,865-866,901-902,1128-1129,1229-1230,1536-1543
+frontend/src/views/admin/SubscriptionsView.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 791,1000
+backend/internal/service/openai_gateway_messages.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 43,47-49
+backend/internal/service/gateway_request.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 120,228-230,289
+backend/internal/service/openai_gateway_request_body.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 62-63
+frontend/src/components/account/__tests__/CreateAccountModal.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 10,16,28-32,93-127,129,140-141,190,204-231,286-321
+  s_c40ff765e8dcb4::t_554cd5fa037be3 322
+backend/internal/service/domain_constants.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 67
+frontend/src/components/admin/channel/__tests__/PricingEntryCard.timePricing.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 19-20,74-84
+  s_c40ff765e8dcb4::t_4a9944eb7426ed 85-86
+frontend/src/components/account/CreateAccountModal.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 540,1253,1277-1295,2980,3067,3069,3763,3768,3774,3883-3886,3956-3961,3976,3985-3996,4023,4028,4033,4036,4038-4048,4053-4060,4072-4074,4078,5021-5022,5491-5499,5503
+backend/internal/service/openai_gateway_grok_tool_protocol.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 30,39
+frontend/src/components/admin/channel/IntervalRow.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 6-58,106,121-124
+backend/internal/model/error_passthrough_rule_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-20
+backend/internal/service/account_test_service_cn_adaptive.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-206
+frontend/src/i18n/locales/en/admin/accounts.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 121-124
+backend/internal/service/account_test_service_cn_adaptive_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-191
+backend/internal/handler/admin/channel_handler.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 67-68,88-100,137-138,158-171,263-264,290-303,307,317-323,325-337,340-344,353-354,385,446,520
+backend/internal/handler/ops_error_logger.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1076,1342-1354,1567,1570-1572,1577,1584-1587
+backend/internal/service/adaptive_api_protocol_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-227
+backend/internal/repository/channel_repo_pricing.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 19,64-65,67-68,99,140,157,183,250-251,254-255,296-297,300
+frontend/src/constants/platforms.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-28
+backend/internal/service/billing_service_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 218,296-297,304-329,1623-1624,1626,1641,1643,1669-1674,1701-1702,1704-1721
+backend/internal/service/channel_service.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 738-748,756-758
+backend/migrations/228_channel_pricing_multipliers.sql
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-56
+backend/internal/service/cn_providers_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 58-60,297-298,413-415,489-491,498-548,657-663
+  s_c40ff765e8dcb4::t_f6df41a32b92c2 664
+backend/internal/service/openai_gateway_chat_completions.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 49-53,91-123,132-134,169
+backend/internal/service/openai_gateway_record_usage_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1151,1167,1222,1237-1239,1255-1257,1365
+backend/internal/service/channel_pricing_multipliers_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-288
+backend/migrations/channel_pricing_multipliers_migration_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-43
+frontend/src/components/account/__tests__/credentialsBuilder.cnAdaptive.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-39
+backend/internal/repository/proxy_probe_service.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 34-45,47-51,60-61,64,70-74,76-80,96-106,154-155,214-244
+  s_c40ff765e8dcb4::t_62239e9cdfef44 245
+backend/internal/service/account.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1313-1319,1371-1372,1385-1444,1455,1458-1460
+backend/internal/pkg/apicompat/responses_client_tools_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 69-387,439-479,501-521
+  s_c40ff765e8dcb4::t_79e8ea786a152e 522
+backend/internal/service/openai_ws_http_bridge.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 50-76,275-277,279-286,288,291,293,296-304,307-308
+deploy/config.example.yaml
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 189-198
+frontend/src/components/account/CnBaseUrlPresets.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 33
+frontend/src/components/account/credentialsBuilder.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 259-261,325-333
+  s_c40ff765e8dcb4::t_1f3ddc43b887bb 334-336
+frontend/src/components/admin/channel/types.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 13-16,28-29,173-178,201-204,219-222,355-366
+  s_c40ff765e8dcb4::t_f82f1b8cf892f8 367-368
+backend/internal/config/proxy_probe_config_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-47
+frontend/src/i18n/locales/en/admin/overview.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1024
+backend/internal/repository/channel_repo_pricing_time_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 19,36,108,111,121,124,156,159,169,172
+frontend/src/i18n/locales/zh/admin/overview.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1021
+frontend/src/i18n/locales/en/admin/channels.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 73,132-139
+backend/internal/service/usage_log_helpers.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 13-19
+backend/internal/handler/ops_error_logger_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 500-600
+backend/internal/service/account_stats_pricing_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 771-790
+backend/internal/service/gateway_usage_billing.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1160,1171-1172,1224
+frontend/src/views/admin/__tests__/GroupsView.compositePlatforms.spec.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 2,6-7
+frontend/src/components/admin/account/AccountTableFilters.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 21,29
+frontend/src/components/account/longContextBilling.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1-11
+backend/cmd/server/VERSION
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 1
+backend/internal/handler/admin/channel_handler_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 308,335,376,399,413,436,442,446-479
+  s_c40ff765e8dcb4::t_fb7e0aa2563644 480-481
+backend/internal/service/billing_service.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 94-114,128-135,144,153-180,321,323-324,360-384,1071-1097,1099,1101,1104,1106,1109,1111,1117,1119,1198-1210,1217-1218,1258
+backend/internal/service/upstream_billing_probe.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 600-602
+frontend/src/components/account/EditAccountModal.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 31,65-78,1983,2819,2825,2830,2871-2874,2928,2930-2934,2954,2963-2971,2973-2988,2991,2999-3009,3834-3839,3843-3873,3887-3889,4561-4571
+frontend/src/components/admin/channel/PricingEntryCard.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 142-155,172,279,283,316-317,332-333
+frontend/src/i18n/locales/zh/admin/channels.ts
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 73,132-139
+backend/internal/service/gateway_forward.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 91,96-105,898-940
+  s_c40ff765e8dcb4::t_5c32e324ad0302 941
+backend/internal/service/model_pricing_resolver_test.go
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 145,264,266,307,312,537,551,554,695-698
+  s_c40ff765e8dcb4::t_3f5b2d7c4093e7 699-701
+frontend/src/components/admin/ErrorPassthroughRulesModal.vue
+  s_c40ff765e8dcb4::t_d73597abdb3cb3 436,489
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b155bf0dacd9f08068e98770060f186c860262fd",
+  "prompts": {},
+  "sessions": {
+    "s_c40ff765e8dcb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a01a7e-de7d-7a83-9510-e855c54ab5c5",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "wangdonghan <wang.donghan@cesgroup.com.cn>"
+    }
+  }
+}
