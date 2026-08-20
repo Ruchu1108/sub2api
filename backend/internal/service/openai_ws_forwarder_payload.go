@@ -633,54 +633,38 @@ func openAIWSRawItemsContainOrphanToolCalls(items []json.RawMessage) bool {
 	return false
 }
 
-// openAIWSRemoveOrphanReplayToolCalls removes replay-only tool call context
-// items that have no matching output in the complete input sequence. Calls
-// present in the client's current input are preserved: they may be legitimate
-// request context, while replay-only calls are gateway-derived history.
-// Replaying a half-open call on a later response.create makes Responses reject
-// the request with "No tool output found for custom tool call". We deliberately
-// do not synthesize an output because the gateway cannot know the tool's result.
-func openAIWSRemoveOrphanReplayToolCalls(items []json.RawMessage, currentItems []json.RawMessage) []json.RawMessage {
-	if len(items) == 0 {
-		return cloneOpenAIWSRawMessages(items)
+func sanitizeOpenAIWSHistoricalReplayToolCalls(
+	previousItems []json.RawMessage,
+	currentItems []json.RawMessage,
+) []json.RawMessage {
+	if len(previousItems) == 0 {
+		return cloneOpenAIWSRawMessages(previousItems)
 	}
 	outputCallIDs := make(map[string]struct{})
-	currentCallIDs := make(map[string]struct{})
-	for _, item := range items {
-		if !isCodexToolCallOutputItemType(gjson.GetBytes(item, "type").String()) {
-			continue
-		}
-		callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String())
-		if callID != "" {
-			outputCallIDs[callID] = struct{}{}
-		}
-	}
-	for _, item := range currentItems {
-		if !isCodexToolCallContextItemType(gjson.GetBytes(item, "type").String()) {
-			continue
-		}
-		callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String())
-		if callID != "" {
-			currentCallIDs[callID] = struct{}{}
+	collectOutputCallIDs := func(items []json.RawMessage) {
+		for _, item := range items {
+			if !isCodexToolCallOutputItemType(gjson.GetBytes(item, "type").String()) {
+				continue
+			}
+			if callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String()); callID != "" {
+				outputCallIDs[callID] = struct{}{}
+			}
 		}
 	}
+	collectOutputCallIDs(previousItems)
+	collectOutputCallIDs(currentItems)
 
-	filtered := make([]json.RawMessage, 0, len(items))
-	for _, item := range items {
+	sanitized := make([]json.RawMessage, 0, len(previousItems))
+	for _, item := range previousItems {
 		if isCodexToolCallContextItemType(gjson.GetBytes(item, "type").String()) {
 			callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String())
-			if callID == "" {
-				continue
-			}
-			_, hasOutput := outputCallIDs[callID]
-			_, fromCurrentInput := currentCallIDs[callID]
-			if !hasOutput && !fromCurrentInput {
+			if _, paired := outputCallIDs[callID]; !paired {
 				continue
 			}
 		}
-		filtered = append(filtered, json.RawMessage(cloneOpenAIWSPayloadBytes(item)))
+		sanitized = append(sanitized, append(json.RawMessage(nil), item...))
 	}
-	return filtered
+	return sanitized
 }
 
 func openAIWSKeepSingleCompactionTrigger(items []json.RawMessage, currentItems []json.RawMessage) []json.RawMessage {
@@ -742,19 +726,17 @@ func buildOpenAIWSReplayInputSequence(
 	if !previousFullInputExists {
 		return cloneOpenAIWSRawMessages(currentItems), currentExists, nil
 	}
+	previousFullInput = sanitizeOpenAIWSHistoricalReplayToolCalls(previousFullInput, currentItems)
 	if !currentExists || len(currentItems) == 0 {
-		filtered := openAIWSRemoveOrphanReplayToolCalls(previousFullInput, currentItems)
-		return openAIWSKeepSingleCompactionTrigger(filtered, currentItems), true, nil
+		return openAIWSKeepSingleCompactionTrigger(previousFullInput, currentItems), true, nil
 	}
 	if openAIWSRawItemsHasPrefix(currentItems, previousFullInput) {
-		filtered := openAIWSRemoveOrphanReplayToolCalls(currentItems, currentItems)
-		return openAIWSKeepSingleCompactionTrigger(filtered, currentItems), true, nil
+		return openAIWSKeepSingleCompactionTrigger(currentItems, currentItems), true, nil
 	}
 	merged := make([]json.RawMessage, 0, len(previousFullInput)+len(currentItems))
 	merged = append(merged, cloneOpenAIWSRawMessages(previousFullInput)...)
 	merged = append(merged, cloneOpenAIWSRawMessages(currentItems)...)
-	filtered := openAIWSRemoveOrphanReplayToolCalls(merged, currentItems)
-	return openAIWSKeepSingleCompactionTrigger(filtered, currentItems), true, nil
+	return openAIWSKeepSingleCompactionTrigger(merged, currentItems), true, nil
 }
 
 func setOpenAIWSPayloadInputSequence(
