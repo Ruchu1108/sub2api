@@ -1,0 +1,27 @@
+backend/internal/service/openai_ws_forwarder_ingress_test.go
+  s_c40ff765e8dcb4::t_5d67d82e19d6f1 997-1014
+  s_c40ff765e8dcb4::t_fd06dfb7bbb385 940-976
+  s_c40ff765e8dcb4::t_afc96037b0038e 986
+  s_c40ff765e8dcb4::t_07a941fbda2923 977-985,987-996
+backend/internal/service/openai_ws_http_bridge_test.go
+  s_c40ff765e8dcb4::t_9ea4d9c724d69e 607-707
+backend/internal/service/openai_ws_forwarder_payload.go
+  s_c40ff765e8dcb4::t_bc93d2cbbbc736 670-715,778
+  s_c40ff765e8dcb4::t_5d67d82e19d6f1 775-777
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "91756f3fa56b9392f0f682a388accb0805c05cc2",
+  "prompts": {},
+  "sessions": {
+    "s_c40ff765e8dcb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a01a7e-de7d-7a83-9510-e855c54ab5c5",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "wangdonghan <wang.donghan@cesgroup.com.cn>"
+    }
+  }
+}
