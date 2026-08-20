@@ -937,6 +937,99 @@ func TestBuildOpenAIWSReplayInputSequence(t *testing.T) {
 		require.Equal(t, "call_live", gjson.GetBytes(items[1], "call_id").String())
 	})
 
+	t.Run("previous_response_id_duplicate_call_prefers_current_item", func(t *testing.T) {
+		previousFull := []json.RawMessage{
+			json.RawMessage(`{"type":"input_text","text":"old history"}`),
+			json.RawMessage(`{"type":"custom_tool_call","id":"gateway_call","call_id":"call_1","name":"exec","input":"pwd"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previousFull,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"client history"},{"type":"custom_tool_call","id":"client_call","call_id":"call_1","name":"exec","input":"pwd"},{"type":"custom_tool_call_output","call_id":"call_1","output":"/tmp"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 4)
+		require.Equal(t, "old history", gjson.GetBytes(items[0], "text").String())
+		require.Equal(t, "client history", gjson.GetBytes(items[1], "text").String())
+		require.Equal(t, "client_call", gjson.GetBytes(items[2], "id").String())
+		require.Equal(t, "custom_tool_call_output", gjson.GetBytes(items[3], "type").String())
+	})
+
+	t.Run("previous_response_id_duplicate_pair_prefers_current_call_and_output", func(t *testing.T) {
+		previousFull := []json.RawMessage{
+			json.RawMessage(`{"type":"custom_tool_call","id":"gateway_call","call_id":"call_1","name":"exec","input":"pwd"}`),
+			json.RawMessage(`{"type":"custom_tool_call_output","call_id":"call_1","output":"old"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previousFull,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"client history"},{"type":"custom_tool_call","id":"client_call","call_id":"call_1","name":"exec","input":"pwd"},{"type":"custom_tool_call_output","call_id":"call_1","output":"current"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 3)
+		require.Equal(t, "client_call", gjson.GetBytes(items[1], "id").String())
+		require.Equal(t, "current", gjson.GetBytes(items[2], "output").String())
+	})
+
+	t.Run("previous_response_id_duplicate_call_without_call_id_prefers_current_id", func(t *testing.T) {
+		previousFull := []json.RawMessage{
+			json.RawMessage(`{"type":"custom_tool_call","id":"item_1","name":"exec","input":"old"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previousFull,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"continue"},{"type":"custom_tool_call","id":"item_1","name":"exec","input":"current"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 2)
+		require.Equal(t, "continue", gjson.GetBytes(items[0], "text").String())
+		require.Equal(t, "current", gjson.GetBytes(items[1], "input").String())
+	})
+
+	t.Run("previous_response_id_deduplicates_all_tool_call_types", func(t *testing.T) {
+		for _, typ := range []string{"function_call", "tool_search_call", "custom_tool_call", "mcp_tool_call"} {
+			t.Run(typ, func(t *testing.T) {
+				previousFull := []json.RawMessage{
+					json.RawMessage(`{"type":"` + typ + `","id":"gateway_item","call_id":"call_1"}`),
+				}
+				items, exists, err := buildOpenAIWSReplayInputSequence(
+					previousFull,
+					true,
+					[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"continue"},{"type":"`+typ+`","id":"client_item","call_id":"call_1"}]}`),
+					true,
+				)
+				require.NoError(t, err)
+				require.True(t, exists)
+				require.Len(t, items, 2)
+				require.Equal(t, "client_item", gjson.GetBytes(items[1], "id").String())
+			})
+		}
+	})
+
+	t.Run("full_history_prefix_is_checked_before_historical_sanitizing", func(t *testing.T) {
+		previousFull := []json.RawMessage{
+			json.RawMessage(`{"type":"input_text","text":"first"}`),
+			json.RawMessage(`{"type":"custom_tool_call","id":"item_orphan","call_id":"call_orphan","name":"exec","input":"pwd"}`),
+			json.RawMessage(`{"type":"input_text","text":"second"}`),
+		}
+		items, exists, err := buildOpenAIWSReplayInputSequence(
+			previousFull,
+			true,
+			[]byte(`{"previous_response_id":"resp_1","input":[{"type":"input_text","text":"first"},{"type":"custom_tool_call","id":"item_orphan","call_id":"call_orphan","name":"exec","input":"pwd"},{"type":"input_text","text":"second"},{"type":"input_text","text":"continue"}]}`),
+			true,
+		)
+		require.NoError(t, err)
+		require.True(t, exists)
+		require.Len(t, items, 4)
+		require.Equal(t, "continue", gjson.GetBytes(items[3], "text").String())
+	})
+
 	t.Run("previous_response_id_full_input_replace", func(t *testing.T) {
 		items, exists, err := buildOpenAIWSReplayInputSequence(
 			lastFull,

@@ -667,6 +667,58 @@ func sanitizeOpenAIWSHistoricalReplayToolCalls(
 	return sanitized
 }
 
+// deduplicateOpenAIWSHistoricalReplayToolItems drops gateway replay calls and
+// outputs when the client supplied the same item in its current input. Keeping
+// the source partitions separate makes the client item authoritative without
+// relying on positions in a merged slice that may already have been filtered.
+func deduplicateOpenAIWSHistoricalReplayToolItems(
+	previousItems []json.RawMessage,
+	currentItems []json.RawMessage,
+) []json.RawMessage {
+	currentKeys := make(map[string]struct{})
+	for _, item := range currentItems {
+		if key := openAIWSReplayToolItemIdentity(item); key != "" {
+			currentKeys[key] = struct{}{}
+		}
+	}
+
+	seenHistorical := make(map[string]struct{})
+	deduplicated := make([]json.RawMessage, 0, len(previousItems))
+	for _, item := range previousItems {
+		key := openAIWSReplayToolItemIdentity(item)
+		if key != "" {
+			if _, suppliedByClient := currentKeys[key]; suppliedByClient {
+				continue
+			}
+			if _, seen := seenHistorical[key]; seen {
+				continue
+			}
+			seenHistorical[key] = struct{}{}
+		}
+		deduplicated = append(deduplicated, append(json.RawMessage(nil), item...))
+	}
+	return deduplicated
+}
+
+func openAIWSReplayToolItemIdentity(item json.RawMessage) string {
+	itemType := gjson.GetBytes(item, "type").String()
+	callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String())
+	switch {
+	case isCodexToolCallContextItemType(itemType):
+		if callID != "" {
+			return "call:" + callID
+		}
+		if id := strings.TrimSpace(gjson.GetBytes(item, "id").String()); id != "" {
+			return "call_item:" + id
+		}
+	case isCodexToolCallOutputItemType(itemType):
+		if callID != "" {
+			return "output:" + callID
+		}
+	}
+	return ""
+}
+
 func openAIWSKeepSingleCompactionTrigger(items []json.RawMessage, currentItems []json.RawMessage) []json.RawMessage {
 	var currentTrigger json.RawMessage
 	for _, item := range currentItems {
@@ -726,12 +778,13 @@ func buildOpenAIWSReplayInputSequence(
 	if !previousFullInputExists {
 		return cloneOpenAIWSRawMessages(currentItems), currentExists, nil
 	}
+	if openAIWSRawItemsHasPrefix(currentItems, previousFullInput) {
+		return openAIWSKeepSingleCompactionTrigger(currentItems, currentItems), true, nil
+	}
+	previousFullInput = deduplicateOpenAIWSHistoricalReplayToolItems(previousFullInput, currentItems)
 	previousFullInput = sanitizeOpenAIWSHistoricalReplayToolCalls(previousFullInput, currentItems)
 	if !currentExists || len(currentItems) == 0 {
 		return openAIWSKeepSingleCompactionTrigger(previousFullInput, currentItems), true, nil
-	}
-	if openAIWSRawItemsHasPrefix(currentItems, previousFullInput) {
-		return openAIWSKeepSingleCompactionTrigger(currentItems, currentItems), true, nil
 	}
 	merged := make([]json.RawMessage, 0, len(previousFullInput)+len(currentItems))
 	merged = append(merged, cloneOpenAIWSRawMessages(previousFullInput)...)
